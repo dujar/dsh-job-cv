@@ -31,12 +31,21 @@ they provide together with their current CV.
   registers into `conversation.input.dock`. When the session preset is
   `job` the dock shows a **Show preview / Hide preview** button that opens
   the CV in one of two shapes:
-  - _split_ (viewport ≥ 900px) — the conversation column is squeezed to a
-    460px chat sidebar and the CV pane is portalled into the freed main
-    area. The self-healing DOM transform follows the same proven pattern
-    as dsh-trader's chart host.
-  - _overlay_ — below 900px, or via **Full screen** on a wide viewport,
-    the CV fills the window. `Esc` returns.
+  - _split_ (center column ≥ 860px) — the conversation is squeezed into a
+    chat sidebar **on the right** and the CV pane is portalled into the
+    whole area that frees up on its left, so nothing of the chat stands
+    over the page. The sidebar is 460px wide and gives width back down to
+    340px on a tighter column, because the preview keeps a 520px floor
+    before the split is abandoned; every pixel above that goes to the CV,
+    not to the chat. The self-healing DOM transform follows the same
+    proven pattern as dsh-trader's chart host.
+  - _overlay_ — when there is no room to split, or via **Full screen** on
+    a wide column, the CV fills the window. `Esc` returns.
+
+  The room is measured on the **center column**, not on the window: the
+  shell spends width on its session sidebar and, when it is open, on the
+  details panel, so a wide window can still leave a column too narrow to
+  divide. Dragging either panel re-decides the shape live.
 
   The pane polls the document every 2.5s, so every agent save appears
   live and is announced ("v4 · just updated"); a host that stops
