@@ -23,6 +23,23 @@ assert.ok(msg.includes('Job post link: https://jobs.example.com/42'))
 assert.ok(msg.includes('My CV: /tmp/cv.pdf'))
 assert.ok(msg.includes('/jobcv/workspace'), 'tells the agent to upsert the candidacy workspace')
 assert.ok(msg.includes('/jobcv/doc'), 'tells the agent where to save the tailored CV')
+assert.ok(!msg.includes('Company:'), 'no company given, no company line')
+
+// an optional company name steers the agent's upsert
+const withCompany = B.buildStartMessage('https://jobs.example.com/42', '/tmp/cv.pdf', 'Acme Corp')
+assert.ok(withCompany.includes('Company: Acme Corp'))
+
+// when the form already opened the workspace, the message names the exact
+// path so the agent adopts it rather than deriving a different folder
+const adopted = B.buildStartMessage(
+  'https://jobs.example.com/42',
+  '/tmp/cv.pdf',
+  'Acme Corp',
+  '/apps/acme-corp/42',
+)
+assert.ok(adopted.includes('already open at /apps/acme-corp/42'))
+assert.ok(adopted.includes('created:false'), 'tells the agent the upsert will resume, not fork')
+assert.ok(adopted.includes('adopt that folder'))
 
 // ---- intakeCv: reads the file as base64, POSTs it, resolves to the path ----
 let sent = null
@@ -43,6 +60,34 @@ assert.equal(sent[0], '/jobcv/intake')
 assert.equal(sent[1].sessionId, 's1')
 assert.equal(sent[1].filename, 'cv.pdf')
 assert.equal(sent[1].dataBase64, Buffer.from('ABC').toString('base64'))
+
+// ---- upsertWorkspace: the direct fallback posts to /jobcv/workspace ----
+let wsSent = null
+globalThis.fetch = async (url, opts) => {
+  wsSent = [url, JSON.parse(opts.body)]
+  return {
+    ok: true,
+    json: async () => ({ ok: true, path: '/apps/acme-corp/42', created: true }),
+  }
+}
+const ws = await B.upsertWorkspace('s1', 'Acme Corp', 'https://jobs.example.com/42')
+assert.equal(ws.path, '/apps/acme-corp/42')
+assert.equal(wsSent[0], '/jobcv/workspace')
+assert.equal(wsSent[1].sessionId, 's1')
+assert.equal(wsSent[1].company, 'Acme Corp')
+assert.equal(wsSent[1].jobUrl, 'https://jobs.example.com/42')
+// a 4xx surfaces the server message + status; a 200 without a path rejects
+globalThis.fetch = async () => ({
+  ok: false,
+  status: 400,
+  json: async () => ({ error: 'company must be a non-empty string' }),
+})
+await assert.rejects(
+  B.upsertWorkspace('s1', ' ', 'https://x'),
+  /company must be a non-empty string \(400\)/,
+)
+globalThis.fetch = async () => ({ ok: true, json: async () => ({ ok: true }) })
+await assert.rejects(B.upsertWorkspace('s1', 'Acme', 'https://x'), /no workspace path/)
 
 // ---- failure modes surface as readable errors ----
 // a 4xx with a server message names both the message and the status
