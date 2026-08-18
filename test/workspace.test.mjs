@@ -9,6 +9,7 @@ import {
   candidacyPath,
   upsertCandidacy,
   applicationsRoot,
+  candidacyRoot,
   listCandidacyFiles,
   CANDIDACY_DIRS,
   mirrorCvVersion,
@@ -156,6 +157,28 @@ try {
     assert.equal(applicationsRoot('/home/u'), '/custom/apps')
     delete process.env.DSH_JOB_CV_ROOT
     assert.equal(applicationsRoot('/home/u'), join('/home/u', 'dsh-job-cv', 'applications'))
+
+    // candidacyRoot: an application belongs in the session's own project, not
+    // in $DSH_HOME beside the plugin's internal state.
+    assert.equal(
+      candidacyRoot({ sessionCwd: '/home/u/projects/job_candidatures', dshHome: '/home/u/.dsh' }),
+      '/home/u/projects/job_candidatures',
+      'the session working directory wins',
+    )
+    // no cwd (or a relative one) falls back rather than guessing
+    assert.equal(
+      candidacyRoot({ sessionCwd: '', dshHome: '/home/u/.dsh' }),
+      join('/home/u/.dsh', 'dsh-job-cv', 'applications'),
+    )
+    assert.equal(
+      candidacyRoot({ sessionCwd: 'relative/path', dshHome: '/home/u/.dsh' }),
+      join('/home/u/.dsh', 'dsh-job-cv', 'applications'),
+      'a relative cwd is not a workspace',
+    )
+    assert.equal(candidacyRoot(), applicationsRoot(undefined))
+    // an explicit override still beats everything
+    process.env.DSH_JOB_CV_ROOT = '/custom/apps'
+    assert.equal(candidacyRoot({ sessionCwd: '/home/u/projects/x' }), '/custom/apps')
   } finally {
     if (prev === undefined) delete process.env.DSH_JOB_CV_ROOT
     else process.env.DSH_JOB_CV_ROOT = prev

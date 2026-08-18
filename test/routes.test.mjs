@@ -198,7 +198,7 @@ try {
       get: async () => ({ version: 0 }),
       setWorkspace: async () => '/apps/acme/job-1',
     },
-    applicationsRoot: pathJoin(wsRoot, 'apps'),
+    resolveRoot: () => pathJoin(wsRoot, 'apps'),
     intakeRoot: pathJoin(wsRoot, 'intake'),
     skillText: skill,
     sendText: () => {},
@@ -247,7 +247,7 @@ try {
   }
   const wsGetGroups = defineJobCvRoutes({
     store: wsGetStore,
-    applicationsRoot: pathJoin(wsRoot, 'apps'),
+    resolveRoot: () => pathJoin(wsRoot, 'apps'),
     intakeRoot: pathJoin(wsRoot, 'intake'),
     skillText: skill,
     sendText: () => {},

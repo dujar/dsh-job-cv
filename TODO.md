@@ -54,6 +54,19 @@ preset. That means owning redirect/size/timeout limits and an SSRF policy
 (a job link is user-supplied and would be fetched by the host), so it is a
 real feature rather than a config change. Until then the shell path stands.
 
+## Job folder naming vs. a hand-kept convention
+
+Folders already kept by hand look like `coinbase/7866674-senior-sw-engineer-trading-intx`
+— the job id AND the title. `jobSlug` produces the id alone when the post has
+one, so plugin-made folders read `3812345678/` instead.
+
+Not changed, deliberately: the folder name is the upsert's identity, and
+`jobTitle` is optional on `POST /jobcv/workspace`. Folding it into the path
+would mean one call with a title and one without produce two folders for the
+same job — losing the property the whole design defends. Closing this needs
+the title to become required, or a lookup that matches an existing folder by
+id prefix before creating a new one.
+
 ## Smaller
 
 - The preview polls `/jobcv/doc` every 2.5s. A push channel (SSE, or the
