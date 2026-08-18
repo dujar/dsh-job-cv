@@ -197,6 +197,29 @@ assert.ok(
 )
 assert.ok(css.includes('[data-jobcv-noted]'), 'the queued state exists')
 
+// ---- the page deck: sheets of paper, with the break visible ----
+const deckLight = A.pageDeckCss(true, { dark: false })
+assert.ok(deckLight.includes('.page{'), 'each .page division becomes a sheet')
+assert.ok(deckLight.includes('22px'), 'the gap between sheets is the page break')
+assert.ok(deckLight.includes('box-shadow'), 'and the shadow makes them read as stacked paper')
+assert.ok(
+  deckLight.includes('box-sizing:border-box'),
+  'the sheet is 210mm of PAPER, padding included',
+)
+assert.ok(deckLight.includes('@media print'), 'the print normalizer travels with the deck')
+assert.ok(
+  deckLight.includes('repeating-linear-gradient'),
+  'the A4 boundary is drawn on the sheet itself — an overflow crosses it where the PDF would break',
+)
+const deckDark = A.pageDeckCss(true, { dark: true })
+assert.ok(deckDark.includes('#26282b'), 'the desk follows the theme')
+const deckFlat = A.pageDeckCss(false, { dark: false })
+assert.ok(
+  deckFlat.includes('repeating-linear-gradient'),
+  'no .page divisions, a boundary line instead',
+)
+assert.ok(deckFlat.includes('297mm'), 'the fallback line lands on the A4 boundary')
+
 const one = A.buildRevisionMessage([{ ...note, comment: '' }], { version: 1 })
 assert.ok(one.includes('Revise one part of my CV (currently v1)'))
 assert.ok(one.includes('What is needed: improve this'), 'an empty comment still says something')
