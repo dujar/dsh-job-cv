@@ -14,28 +14,18 @@ anyway, and shows the message to copy into the chat. The agent is still the
 reliable path for the normal case — it reads the company name and job id
 off the fetched post.
 
-## Confirm the composer action name
+## Composer face — RESOLVED
 
-`lib/client/025-cv-annotate.js` sends a marked-up revision request to the chat
-through the standard kit's `inputActions`. That prop comes from the shell's
-composer plugin, which is not among this plugin's peer deps, so its method
-names could not be read from any contract available here.
+`inputActions` is documented by `@deepseek-ai/dsh-client-ui-conversation`
+(`lib/types/client/input/contract.d.ts`):
 
-`sendToComposer()` therefore probes: a list of plausible names
-(`appendText`, `append`, `insertText`, `insert`, `addText`, `setText`,
-`setDraft`, `setValue`, `setInput`, `setPrompt`), then any action whose name
-matches `^(set|append|insert|add)` **and** `(text|draft|input|value|prompt|
-message|content)`, then the clipboard. Whichever path it takes is reported to
-the user, so nothing is silently dropped.
+    setDraft(text)   single public draft write path — the FULL next draft
+    submit()         enter submission
+    addImages / removeImage / pruneImages
 
-**To close this:** find the real action name (log `Object.keys(inputActions)`
-from `JobDock`, or read the composer plugin), put it first in
-`COMPOSER_ACTIONS`, and narrow the fallback. Keep the clipboard path — it is
-the only thing that works when the composer is not mounted.
-
-Also worth settling: whether the right call is `append` (add to whatever the
-user has already typed) or `set` (replace the draft). The current order
-prefers appending, which is the safer of the two.
+Note `setDraft` REPLACES; there is no append. `deliverToComposer` therefore
+appends below an existing draft itself and only submits when the composer was
+empty. The name probe is kept as a narrow fallback for other shells.
 
 ## Reading job posts: no fetch provider exists
 
