@@ -58,6 +58,23 @@ they provide together with their current CV.
   live and is announced ("v4 · just updated"); a host that stops
   answering is reported rather than silently freezing the preview.
 
+  The document renders as paper, not as a scroll: each `<div class="page">`
+  division the agent writes is drawn as a separate A4 sheet on a desk, with
+  the page break visible as the gap and shadow between sheets — a two-page CV
+  shows two pages, not one long strip. Documents without page divisions still
+  get a boundary line every 297mm, so the break is readable either way. The
+  contract tells the agent to paginate deliberately with `.page`; the deck
+  styling is injected by the parent under `@media screen`, so it never affects
+  the printed PDF.
+
+  The preview is TRUE A4: the sheet renders at 210mm even when the pane is
+  narrower (the pane scrolls instead of shrinking the paper), so the document
+  lays out at exactly the width the PDF prints at — a preview page and a
+  printed page can no longer disagree. A `@media print` normalizer pins the
+  page box (border-box, 210mm of paper including padding, no margins), and
+  the A4 boundary is drawn on the sheet itself: content that would spill onto
+  a second printed page crosses the line in the preview at exactly that spot.
+
 ### The cover letter
 
 **+ Cover letter** in the toolbar asks the agent for a one-page letter to go
