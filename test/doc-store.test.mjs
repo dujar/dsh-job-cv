@@ -185,6 +185,7 @@ try {
     workspace: '',
     proposal: null,
     letter: null,
+    note: '',
     company: '',
     jobTitle: '',
     history: [],
@@ -197,6 +198,37 @@ try {
   await writeFile(join(shapeDir, 'sessions', 'sx.json'), '{"version":3,"html":"x"}', 'utf8')
   assert.equal((await createDocStore(shapeDir).get('sx')).historyDepth, 0)
   assert.equal((await createDocStore(shapeDir).get('sx')).version, 3)
+
+  // ---- version notes: a timeline of timestamps says nothing ----
+  {
+    const noted = createDocStore(join(dir, 'noted'))
+    await noted.save('n1', { html: '<h1>1</h1>', note: 'First tailored draft' })
+    await noted.save('n1', { html: '<h1>2</h1>', note: 'Quantified the bullets' })
+    await noted.save('n1', { html: '<h1>3</h1>' }) // a save may omit its note
+    const timeline = await noted.history('n1')
+    assert.deepEqual(
+      timeline.map((v) => v.version),
+      [3, 2, 1],
+      'newest first',
+    )
+    assert.deepEqual(
+      timeline.map((v) => v.note),
+      ['', 'Quantified the bullets', 'First tailored draft'],
+      'each version keeps the note it was saved with',
+    )
+    // a restore labels itself, so the timeline explains its own jumps
+    assert.equal(await noted.restore('n1', 1), 4)
+    assert.equal((await noted.history('n1'))[0].note, 'Restored v1')
+    // notes are bounded — this is a label, not an essay
+    await noted.save('n1', { html: '<h1>x</h1>', note: 'z'.repeat(500) })
+    assert.equal((await noted.history('n1'))[0].note.length, 200)
+
+    // ---- bodies are fetched one at a time, not shipped with the list ----
+    assert.equal(timeline[0].html, undefined, 'the list carries no bodies')
+    assert.equal(await noted.versionHtml('n1', 2), '<h1>2</h1>')
+    assert.equal(await noted.versionHtml('n1', 1), '<h1>1</h1>')
+    assert.equal(await noted.versionHtml('n1', 999), null, 'an unknown version is not an error')
+  }
 
   // no temp files left behind
   const leftovers = (await readdir(join(dir, 'sessions'))).filter((f) => f.includes('.tmp-'))
