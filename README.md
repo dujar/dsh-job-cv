@@ -67,13 +67,18 @@ they provide together with their current CV.
   styling is injected by the parent under `@media screen`, so it never affects
   the printed PDF.
 
-  The preview is TRUE A4: the sheet renders at 210mm even when the pane is
-  narrower (the pane scrolls instead of shrinking the paper), so the document
-  lays out at exactly the width the PDF prints at — a preview page and a
+  The preview is TRUE A4: the document lays out at 210mm — the width the PDF
+  prints at — and when the pane is narrower than a full sheet, the whole
+  sheet SCALES down as one (transform, never reflow), so a preview page and a
   printed page can no longer disagree. A `@media print` normalizer pins the
   page box (border-box, 210mm of paper including padding, no margins), and
   the A4 boundary is drawn on the sheet itself: content that would spill onto
   a second printed page crosses the line in the preview at exactly that spot.
+
+  The boundary between the preview and the chat is a **draggable divider**:
+  pulling it wider gives the chat more room and the sheet scales to what
+  remains (down to a 240px floor), double-clicking it returns to the computed
+  split, and the chosen share persists per session.
 
 ### The cover letter
 
