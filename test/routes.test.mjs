@@ -28,7 +28,14 @@ const groups = defineJobCvRoutes({
 })
 const paths = groups.flatMap((g) => g.entries.map((e) => e.path))
 assert.deepEqual(paths, [...new Set(paths)], 'one registration per exact path')
-assert.deepEqual(paths.sort(), ['/jobcv/doc', '/jobcv/intake', '/jobcv/skill', '/jobcv/workspace'])
+assert.deepEqual(paths.sort(), [
+  '/jobcv/doc',
+  '/jobcv/history',
+  '/jobcv/intake',
+  '/jobcv/restore',
+  '/jobcv/skill',
+  '/jobcv/workspace',
+])
 
 const summary = renderRouteSummary(
   groups.map((g) => [
@@ -47,6 +54,8 @@ assert.ok(summary.includes('GET /jobcv/skill'))
 assert.ok(summary.includes('GET /jobcv/workspace'))
 assert.ok(summary.includes('POST /jobcv/workspace'))
 assert.ok(summary.includes('POST /jobcv/intake'))
+assert.ok(summary.includes('GET /jobcv/history'))
+assert.ok(summary.includes('POST /jobcv/restore'))
 
 // the doc handler dispatches GET vs POST itself
 function fakeRes() {
@@ -141,7 +150,7 @@ await guarded(
 assert.equal(okGuarded.code, 200)
 
 // the method guard fires for entries that declare one
-const skillEntry = groups[2].entries[0]
+const skillEntry = groups[3].entries[0]
 assert.equal(skillEntry.method, 'GET')
 const wrongVerb = fakeRes()
 await guardHandler(skillEntry, guardDeps)(
@@ -200,7 +209,12 @@ try {
   const wsGetStore = {
     get: async (sid) =>
       sid === 's1'
-        ? { version: 1, workspace: pathJoin(wsRoot, 'apps', 'acme-corp', '42') }
+        ? {
+            version: 1,
+            workspace: pathJoin(wsRoot, 'apps', 'acme-corp', '42'),
+            company: 'Acme Corp',
+            jobTitle: 'Senior Engineer',
+          }
         : { version: 0, workspace: '' },
   }
   const wsGetGroups = defineJobCvRoutes({
@@ -217,7 +231,7 @@ try {
   assert.equal(wg0.code, 200)
   assert.equal(wg0.body.path, '')
   assert.deepEqual(wg0.body.files, [])
-  // workspace present -> files sorted newest first
+  // workspace present -> files sorted newest first, candidacy label carried
   const wg = fakeRes()
   await wsGetEntry.handler({ method: 'GET', url: '/jobcv/workspace?session=s1' }, wg)
   assert.equal(wg.code, 200)
@@ -227,6 +241,8 @@ try {
     ['README.md'],
     'the breadcrumb written by the upsert is listed',
   )
+  assert.equal(wg.body.company, 'Acme Corp')
+  assert.equal(wg.body.jobTitle, 'Senior Engineer')
   // missing session
   const wgMiss = fakeRes()
   await wsGetEntry.handler({ method: 'GET', url: '/jobcv/workspace' }, wgMiss)
@@ -235,6 +251,59 @@ try {
   const wg405 = fakeRes()
   await wsGetEntry.handler({ method: 'DELETE', url: '/jobcv/workspace?session=s1' }, wg405)
   assert.equal(wg405.code, 405)
+
+  // ---- the version history + restore routes ----
+  const verGroups = defineJobCvRoutes({
+    store: {
+      get: async () => ({ version: 0 }),
+      history: async () => [
+        { version: 4, updatedAt: 4 },
+        { version: 3, updatedAt: 3 },
+        { version: 2, updatedAt: 2 },
+      ],
+      restore: async (sid, version) => (version === 2 ? 5 : null),
+    },
+    skillText: skill,
+    sendText: () => {},
+  })
+  const historyEntry = verGroups[2].entries[0]
+  assert.equal(historyEntry.path, '/jobcv/history')
+  assert.equal(historyEntry.method, 'GET')
+  // missing session
+  const h0 = fakeRes()
+  await historyEntry.handler({ method: 'GET', url: '/jobcv/history' }, h0)
+  assert.equal(h0.code, 400)
+  // happy path: newest first, bodies omitted
+  const h1 = fakeRes()
+  await historyEntry.handler({ method: 'GET', url: '/jobcv/history?session=s1' }, h1)
+  assert.equal(h1.code, 200)
+  assert.deepEqual(
+    h1.body.versions.map((v) => v.version),
+    [4, 3, 2],
+  )
+
+  const restoreEntry = verGroups[2].entries[1]
+  assert.equal(restoreEntry.path, '/jobcv/restore')
+  assert.equal(restoreEntry.method, 'POST')
+  // validation: missing session / bad version
+  const r0 = fakeRes()
+  await restoreEntry.handler(fakeReq('POST', '/jobcv/restore', { version: 2 }), r0)
+  assert.equal(r0.code, 400)
+  const r1 = fakeRes()
+  await restoreEntry.handler(fakeReq('POST', '/jobcv/restore', { sessionId: 's1', version: 0 }), r1)
+  assert.equal(r1.code, 400)
+  // happy path
+  const r2 = fakeRes()
+  await restoreEntry.handler(fakeReq('POST', '/jobcv/restore', { sessionId: 's1', version: 2 }), r2)
+  assert.equal(r2.code, 200)
+  assert.equal(r2.body.version, 5)
+  // unknown version -> 404
+  const r3 = fakeRes()
+  await restoreEntry.handler(
+    fakeReq('POST', '/jobcv/restore', { sessionId: 's1', version: 99 }),
+    r3,
+  )
+  assert.equal(r3.code, 404)
 
   // intake: rejects a missing or empty payload
   const intakeEntry = wsGroups[1].entries[1]

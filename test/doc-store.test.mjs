@@ -34,13 +34,56 @@ try {
   const withWs = await store.get('s1')
   assert.equal(withWs.workspace, '/apps/acme/123')
   assert.equal(withWs.jobUrl, 'https://j.o/1', 'jobUrl untouched when not given')
-  assert.equal(await store.setWorkspace('s1', '/apps/acme/456', 'https://j.o/2'), '/apps/acme/456')
+  assert.equal(
+    await store.setWorkspace(
+      's1',
+      '/apps/acme/456',
+      'https://j.o/2',
+      'Acme Corp',
+      'Senior Engineer',
+    ),
+    '/apps/acme/456',
+  )
   const withWs2 = await store.get('s1')
   assert.equal(withWs2.workspace, '/apps/acme/456')
   assert.equal(withWs2.jobUrl, 'https://j.o/2', 'jobUrl replaced when given')
+  assert.equal(withWs2.company, 'Acme Corp', 'company recorded for the dock label')
+  assert.equal(withWs2.jobTitle, 'Senior Engineer')
   // a save after setWorkspace keeps the workspace (no lost update)
   assert.equal(await store.save('s1', { html: '<html>3</html>' }), 3)
   assert.equal((await store.get('s1')).workspace, '/apps/acme/456')
+  assert.equal((await store.get('s1')).company, 'Acme Corp', 'company survives a save')
+
+  // history(): pickable versions, newest first, no bodies
+  await store.save('s1', { html: '<html>4</html>' })
+  const pickable = await store.history('s1')
+  assert.equal(pickable[0].version, 4, 'current version first')
+  assert.deepEqual(
+    pickable.map((v) => v.version),
+    [4, 3, 2, 1],
+    'history walks back through every save',
+  )
+  assert.ok(pickable[1].updatedAt > 0)
+  assert.equal('html' in pickable[0], false, 'bodies stay server-side')
+
+  // restore(): rolls back to an earlier version, bumping the version
+  const restored = await store.restore('s1', 2)
+  assert.equal(restored, 5, 'restore is itself a save (version bumps)')
+  const afterRestore = await store.get('s1')
+  assert.equal(afterRestore.version, 5)
+  assert.equal(afterRestore.html, '<html>2</html>', 'the old document is back')
+  assert.equal(afterRestore.workspace, '/apps/acme/456', 'workspace survives a restore')
+  // ...and the restore is never destructive: v4 lands in history
+  const afterVersions = await store.history('s1')
+  assert.deepEqual(
+    afterVersions.map((v) => v.version),
+    [5, 4, 3, 2, 1],
+    'the restored-to version stays in history too',
+  )
+  // restoring the current version or a missing one is refused
+  assert.equal(await store.restore('s1', 5), null, 'current version is not restorable')
+  assert.equal(await store.restore('s1', 99), null, 'unknown version is not restorable')
+  assert.equal(await store.restore('s1', 0), null)
 
   // CONCURRENT saves: the per-session lock must serialize them. Without it
   // both reads see the same version, both write N+1, and one document is
@@ -81,6 +124,8 @@ try {
     jobUrl: '',
     updatedAt: 0,
     workspace: '',
+    company: '',
+    jobTitle: '',
     history: [],
   })
   assert.deepEqual(normalizeRecord({ version: 3, html: 'x' }).history, [])
