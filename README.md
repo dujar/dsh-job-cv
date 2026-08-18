@@ -16,6 +16,8 @@ they provide together with their current CV.
   the `/jobcv/*` surface:
   - `GET /jobcv/doc?session=<id>` — the session's current document
   - `POST /jobcv/doc` — replace the whole document, bump the version
+  - `GET /jobcv/workspace?session=<id>` — the candidacy folder path and
+    the files in it (shown in the dock)
   - `POST /jobcv/workspace` — upsert the candidacy folder
     `<root>/<company>/<job-id>/` and record it on the session
   - `POST /jobcv/intake` — stage a CV file dropped in the browser, return
@@ -63,16 +65,21 @@ can never appear in the exported PDF.
 2. A fresh session shows an **onboarding start form** in the preview: paste
    the public job post link and point at your current CV — either type its
    path or drop the file (PDF/DOCX) onto the form, which stages it through
-   `POST /jobcv/intake` and fills in the stored path.
+   `POST /jobcv/intake` and fills in the stored path. A company name is
+   optional and steers the workspace folder.
 3. **Start** hands the link + CV path to the chat. The agent fetches the
    post, upserts a candidacy workspace (`POST /jobcv/workspace`,
    `<root>/<company>/<job-id>/`), tailors the CV, and saves it through
-   `POST /jobcv/doc` — the preview updates within seconds. The save must
-   carry `Content-Type: application/json`; the `/jobcv/skill` contract
-   spells the call out, because the trust gate rejects the content type
-   `curl -d` would otherwise pick.
-4. Iterate by chatting ("make the summary sharper", "cut to one page").
-5. **Export PDF** on the preview toolbar.
+   `POST /jobcv/doc` — the preview updates within seconds. If the composer
+   is unreachable but a company name was given, the form opens the
+   workspace itself and shows the message to copy. The save must carry
+   `Content-Type: application/json`; the `/jobcv/skill` contract spells
+   the call out, because the trust gate rejects the content type `curl -d`
+   would otherwise pick.
+4. The dock shows the workspace folder and the files the agent has saved
+   into it, refreshed with the same poll as the preview.
+5. Iterate by chatting ("make the summary sharper", "cut to one page").
+6. **Export PDF** on the preview toolbar.
 
 ## Development
 
