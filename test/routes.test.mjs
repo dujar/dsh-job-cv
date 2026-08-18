@@ -16,6 +16,8 @@ assert.ok(
   skill.includes('Content-Type: application/json'),
   'skill demands the header the trust gate requires -- curl -d would 403',
 )
+assert.ok(skill.includes('What is needed:'), 'skill decodes the marked-up revision format')
+assert.ok(skill.includes('advice'), 'skill tells the agent to answer with judgement')
 
 // route surface: exactly ONE exact-path registration per route (the webServer
 // rejects duplicate exact paths — the boot crash this test guards against)

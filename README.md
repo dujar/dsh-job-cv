@@ -33,6 +33,26 @@ they provide together with their current CV.
   live and is announced ("v4 · just updated"); a host that stops
   answering is reported rather than silently freezing the preview.
 
+### Commenting on a part of the CV
+
+**Comment on a part** in the preview toolbar turns the CV into a pick
+surface: hover highlights the line under the cursor, clicking it quotes
+that text into a comment box, and preset chips ("Quantify with real
+numbers", "Shorten this", …) fill in the common asks. Notes queue up, so
+one round of review becomes **one** chat message rather than one message
+per fix — each send costs the agent a full turn and a document rewrite.
+
+The message names the section, a CSS-ish path and the exact current text
+for every note, and closes by asking the agent to save the revision _and_
+answer with judgement: whether each edit really strengthens the CV for
+this job post, and which requests would overstate what the CV supports.
+`GET /jobcv/skill` documents that format on the agent side.
+
+The preview iframe never gets `allow-scripts` — picking works because the
+frame is same-origin, so the _parent_ attaches the listeners and paints
+the highlights. Highlight CSS is injected under `@media screen`, so it
+can never appear in the exported PDF.
+
 ## Workflow
 
 1. Start a new session in **Job mode** (preset chip / Settings roster).
