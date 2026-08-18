@@ -1,18 +1,18 @@
 # TODO
 
-## Onboarding flow — confirm the hand-off shape
+## Onboarding flow — hand-off shape
 
-A fresh session now shows a start form in the preview (job post link + CV
-as a typed path or a dropped file, staged via `POST /jobcv/intake`).
-Submitting composes a chat message telling the agent to open the candidacy
-workspace (`POST /jobcv/workspace`) and tailor the CV.
+A fresh session shows a start form in the preview (job post link + CV as a
+typed path or a dropped file, staged via `POST /jobcv/intake`, plus an
+optional company name). Submitting composes a chat message telling the
+agent to open the candidacy workspace (`POST /jobcv/workspace`) and tailor
+the CV.
 
-Open question: should the start form itself call `POST /jobcv/workspace`
-(and/or seed the job link onto the session) as a fallback when the composer
-is unreachable, instead of only composing a message? The agent is the
-reliable path today (it reads the company name and job id off the fetched
-post), but a direct upsert would make the folder exist even before the
-first agent turn.
+When the composer is unreachable and a company name was given, the form
+falls back to calling `POST /jobcv/workspace` itself so the folder exists
+anyway, and shows the message to copy into the chat. The agent is still the
+reliable path for the normal case — it reads the company name and job id
+off the fetched post.
 
 ## Confirm the composer action name
 
