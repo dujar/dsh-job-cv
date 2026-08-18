@@ -132,10 +132,106 @@ assert.ok(msg.includes('POST the full replacement document'), 'the agent is told
 assert.ok(msg.includes('advise me'), 'the agent is told to answer with advice, not just edits')
 assert.ok(msg.includes('overstate'), 'and to push back rather than invent experience')
 
+// ---- the loading treatment for a comment batch lives on the marked parts ----
+// One injected rule per anchor path: the marked elements dim and pulse, and
+// nothing else in the document moves. The path is machine-generated from the
+// user's own document, but it still passes a whitelist before it becomes CSS.
+assert.equal(
+  A.sanitizeAnchorPath('div.page > div.item > ul > li:nth-of-type(1)'),
+  'div.page > div.item > ul > li:nth-of-type(1)',
+)
+assert.equal(A.sanitizeAnchorPath('li}body{display:none'), 'libodydisplay:none', 'no rule escape')
+const workingCss = A.buildWorkingCss(['div.page > p:nth-of-type(1)', 'ul > li:nth-of-type(2)', ''])
+assert.ok(workingCss.includes('@media screen'), 'never bleeds into a printed PDF')
+assert.ok(workingCss.includes('div.page > p:nth-of-type(1)'))
+assert.ok(workingCss.includes('ul > li:nth-of-type(2)'), 'every part gets its own selector')
+assert.ok(workingCss.includes('blur(1.1px)'), 'the marked part blurs, not the page')
+assert.ok(workingCss.includes('dsh-job-cv-working-pulse'), 'and pulses while the agent works')
+assert.equal(A.buildWorkingCss([]), '', 'no parts, no rule')
+// The queued phase: parts added to the batch blur the moment they are added,
+// before the batch is sent — [data-jobcv-noted] is the selector.
+const queuedCss = A.buildQueuedCss()
+assert.ok(queuedCss.includes('[data-jobcv-noted]'), 'queued parts are the selector')
+assert.ok(queuedCss.includes('blur(1.1px)'), 'and they get the same blur treatment')
+assert.ok(queuedCss.includes('@media screen'), 'still never in print')
+assert.equal(A.buildWorkingCss(['}']), '', 'nothing usable survives sanitizing')
+
+// ---- a dragged range: several parts, one note, quoted one per line ----
+const rangeEls = [
+  el('li', { text: 'Built a thing' }),
+  el('li', { text: 'Shipped a thing' }),
+  el('li', { text: 'Scaled a thing' }),
+]
+const rangePage = el('div', { className: 'page', children: [el('ul', { children: rangeEls })] })
+const range = A.rangeNoteFrom(rangeEls, rangePage, 4)
+assert.equal(range.parts.length, 3, 'every touched element joins the note')
+assert.equal(range.parts[0].text, 'Built a thing')
+assert.ok(range.path.includes('…'), 'the path spans first to last')
+assert.equal(range.paths.length, 3, 'each part keeps its own path')
+assert.ok(range.text.includes('Scaled a thing'), 'the joined quote mentions the whole range')
+
+const rangeMsg = A.buildRevisionMessage([{ ...range, comment: 'Cut this whole section' }], {
+  version: 4,
+})
+assert.ok(rangeMsg.includes('3 parts, one marked range'), 'the message says it is one range')
+assert.ok(rangeMsg.includes('- "Built a thing"'), 'each part is quoted on its own line')
+assert.ok(rangeMsg.includes('- "Scaled a thing"'))
+
+assert.deepEqual(
+  A.anchorPathsFor([note, { ...range, path: 'x' }]),
+  ['div.page > div.item > ul > li:nth-of-type(1)', ...range.paths],
+  'the loading treatment covers every element of every range',
+)
+
+// ---- the three visual states of a mark, each one unmistakable ----
+const css = A.ANNOTATE_CSS
+assert.ok(css.includes('[data-jobcv-hot]'), 'the hover/drag state exists')
+assert.ok(
+  css.includes('outline:2px solid'),
+  'the drag reads as solid clubbing, not a faint dashed hint',
+)
+assert.ok(css.includes('[data-jobcv-picked]'), 'the picked state exists')
+assert.ok(
+  css.includes('box-shadow'),
+  'the picked box is emphatic enough to persist against the document',
+)
+assert.ok(css.includes('[data-jobcv-noted]'), 'the queued state exists')
+
 const one = A.buildRevisionMessage([{ ...note, comment: '' }], { version: 1 })
 assert.ok(one.includes('Revise one part of my CV (currently v1)'))
 assert.ok(one.includes('What is needed: improve this'), 'an empty comment still says something')
 assert.ok(!one.includes('Job post:'), 'no job link, no job line')
+
+// ---- which document the marks came off ----
+// The cover letter is a second document with its own version line and its own
+// route. A request that does not say so reads as a request about the CV, and
+// the agent rewrites the wrong document and saves it over the right one.
+const letter = A.buildRevisionMessage(
+  [
+    { ...note, comment: 'Too formal' },
+    { ...note, version: 1, comment: 'Cut this' },
+  ],
+  { target: 'letter', version: 2, jobUrl: 'https://jobs.example/42' },
+)
+assert.ok(letter.includes('Revise 2 parts of my cover letter (currently letter v2)'))
+assert.ok(!letter.includes('my CV ('), 'the CV is never what a letter request asks to revise')
+assert.ok(
+  letter.includes('(marked on letter v1, before your latest save)'),
+  'a stale anchor is stale against the LETTER version line, not the CV one',
+)
+assert.ok(letter.includes('POST /jobcv/letter'), 'and it is saved through the letter route')
+assert.ok(letter.includes('not /jobcv/doc'), 'named against precisely to keep the CV out of it')
+assert.ok(letter.includes('more persuasive'), 'the advice asked for is about the letter')
+
+const oneLetter = A.buildRevisionMessage([{ ...note, comment: 'Shorten' }], {
+  target: 'letter',
+  version: 3,
+})
+assert.ok(oneLetter.includes('Revise one part of my cover letter (currently letter v3)'))
+
+// The CV is the default: no target, no letter wording.
+assert.ok(!msg.includes('/jobcv/letter'), 'a CV request never mentions the letter route')
+assert.ok(!msg.includes('cover letter'))
 
 // ---- composer delivery ----
 // The documented face (dsh-client-ui-conversation): setDraft writes the FULL

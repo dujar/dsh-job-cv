@@ -184,7 +184,11 @@ try {
     updatedAt: 0,
     workspace: '',
     proposal: null,
+    fit: null,
+    post: null,
+    brief: null,
     letter: null,
+    letterHistory: [],
     note: '',
     company: '',
     jobTitle: '',
@@ -236,5 +240,60 @@ try {
 
   console.log('ok  doc-store')
 } finally {
+  await rm(dir, { recursive: true, force: true })
+}
+
+// ---- the cover letter keeps its own timeline ----
+// It is a second document with its own version line, so "go back to the
+// paragraph I had before" has to mean the letter's v2, not the CV's.
+{
+  const dir = await mkdtemp(join(tmpdir(), 'jobcv-letter-history-'))
+  const store = createDocStore(dir)
+  assert.deepEqual(await store.history('s1', 'letter'), [], 'no letter, no timeline')
+
+  await store.saveLetter('s1', { html: '<html>letter one</html>', note: 'First draft' })
+  await store.saveLetter('s1', { html: '<html>letter two</html>', note: 'Tightened the opening' })
+  await store.save('s1', { html: '<html>cv one</html>', note: 'Tailored' })
+
+  const letterLine = await store.history('s1', 'letter')
+  assert.deepEqual(
+    letterLine.map((e) => [e.version, e.note]),
+    [
+      [2, 'Tightened the opening'],
+      [1, 'First draft'],
+    ],
+    'newest first, each labelled with what its author wrote',
+  )
+  const cvLine = await store.history('s1')
+  assert.deepEqual(
+    cvLine.map((e) => e.version),
+    [1],
+    'and the CV timeline is untouched by letter saves',
+  )
+
+  assert.equal(await store.versionHtml('s1', 1, 'letter'), '<html>letter one</html>')
+  assert.equal(await store.versionHtml('s1', 2, 'letter'), '<html>letter two</html>')
+  assert.equal(
+    await store.versionHtml('s1', 1, 'cv'),
+    '<html>cv one</html>',
+    'the two version lines both start at 1 and must not be confused',
+  )
+
+  // A rollback saves FORWARD, exactly like the CV's: going back is never how
+  // a draft gets lost.
+  const restored = await store.restoreLetter('s1', 1)
+  assert.equal(restored, 3)
+  const after = await store.get('s1')
+  assert.equal(after.letter.version, 3)
+  assert.equal(after.letter.html, '<html>letter one</html>')
+  assert.equal(after.letter.note, 'Restored letter v1')
+  assert.equal(after.version, 1, 'and the CV did not move')
+  assert.equal(
+    (await store.history('s1', 'letter')).length,
+    3,
+    'the version rolled away from is still in the timeline',
+  )
+  assert.equal(await store.restoreLetter('s1', 99), null, 'a version that never existed is null')
+
   await rm(dir, { recursive: true, force: true })
 }

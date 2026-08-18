@@ -3,6 +3,7 @@
 020-default-cv.js
 025-cv-annotate.js
 026-cv-review.js
+027-cv-fit.js
 028-cv-onboard.js
 030-cv-preview.js
 040-job-layout.js
