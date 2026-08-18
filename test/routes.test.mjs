@@ -38,6 +38,14 @@ assert.ok(
   'the contract names the exact error, so the agent does not retry web_fetch',
 )
 assert.ok(skill.includes('curl -sSL'), 'the contract shows how to read a post instead')
+assert.ok(
+  skill.includes('YOUR SESSION ID'),
+  'the contract explains where the session id comes from',
+)
+assert.ok(
+  skill.includes('do not guess'),
+  'a guessed session id saves successfully into a document nobody watches',
+)
 
 // route surface: exactly ONE exact-path registration per route (the webServer
 // rejects duplicate exact paths — the boot crash this test guards against)
