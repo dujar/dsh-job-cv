@@ -17,6 +17,25 @@ new Function(readFileSync(new URL('../lib/client.js', import.meta.url), 'utf8'))
 const mod = spec.factory((n) => (n === 'react' ? require('react') : { createPortal: () => null }))
 const B = mod.__onboard
 
+// ---- offlineReason: a stalled preview has to say WHY ----
+// A 403 is the failure that looks like a hang: the host trusts loopback only,
+// so a GUI opened on a LAN address or a tunnel polls forever and shows
+// nothing. The message has to point at that, not just "unreachable".
+Object.defineProperty(globalThis, 'location', {
+  value: { hostname: '192.168.1.106' },
+  configurable: true,
+  writable: true,
+})
+const forbidden = mod.__diagnostics.offlineReason(Object.assign(new Error('x'), { status: 403 }))
+assert.ok(forbidden.includes('localhost'), 'names the fix: ' + forbidden)
+assert.ok(forbidden.includes('192.168.1.106'), 'names the offending origin')
+assert.equal(
+  mod.__diagnostics.offlineReason(Object.assign(new Error('x'), { status: 500 })),
+  'the host answered 500',
+)
+assert.ok(mod.__diagnostics.offlineReason(new Error('network')).includes('dsh web'))
+assert.ok(mod.__diagnostics.offlineReason(undefined).includes('dsh web'))
+
 // ---- buildStartMessage: the hand-off the agent receives ----
 const msg = B.buildStartMessage('https://jobs.example.com/42', '/tmp/cv.pdf')
 assert.ok(msg.includes('Job post link: https://jobs.example.com/42'))
