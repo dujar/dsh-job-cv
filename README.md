@@ -42,6 +42,30 @@ they provide together with their current CV.
   live and is announced ("v4 · just updated"); a host that stops
   answering is reported rather than silently freezing the preview.
 
+### The cover letter
+
+**+ Cover letter** in the toolbar asks the agent for a one-page letter to go
+with the CV; once one exists the toolbar becomes a **CV / Letter** toggle and
+Export PDF prints whichever is shown. The letter is a second document, not a
+section of the CV: its own version line (`POST /jobcv/letter`), its own
+`letter/` folder beside `cv/`. Revising a paragraph of the letter should not
+renumber the CV's history.
+
+### Reviewing changes before they happen
+
+The agent does not save wording changes — it proposes them. A pending
+proposal takes over the top of the preview, showing per change what the text
+says now, why the post makes it worth changing, two or three alternatives to
+pick from, a box to write your own, and skip. One **Apply** sends every
+decision as a single message, and the choices are binding: the contract tells
+the agent to use them verbatim, not to re-word them or fold in what was
+skipped. Formatting — margins, type sizes, section order — still saves
+directly; approving a margin helps nobody.
+
+Because one comment usually implicates more than the line commented on (cut a
+claim from the summary and the bullet repeating it dangles), a proposal
+carries a _set_ of changes decided together.
+
 ### Commenting on a part of the CV
 
 **Comment on a part** in the preview toolbar turns the CV into a pick
