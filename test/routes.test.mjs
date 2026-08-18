@@ -44,6 +44,7 @@ assert.ok(
 )
 assert.ok(skill.includes('/jobcv/proposal'), 'the contract routes content changes through review')
 assert.ok(skill.includes('/jobcv/letter'), 'the contract names the letter route')
+assert.ok(skill.includes('"note"'), 'every save labels itself for the history timeline')
 assert.ok(
   skill.includes('NOT /jobcv/doc'),
   'saving the letter through the CV route would overwrite the CV',
@@ -354,6 +355,7 @@ try {
         { version: 2, updatedAt: 2 },
       ],
       restore: async (sid, version) => (version === 2 ? 5 : null),
+      versionHtml: async (sid, version) => (version === 2 ? '<h1>two</h1>' : null),
     },
     skillText: skill,
     sendText: () => {},
@@ -373,6 +375,22 @@ try {
     h1.body.versions.map((v) => v.version),
     [4, 3, 2],
   )
+
+  // ?version=N returns that one body, for looking before restoring
+  const hv = fakeRes()
+  await historyEntry.handler({ method: 'GET', url: '/jobcv/history?session=s1&version=2' }, hv)
+  assert.equal(hv.code, 200)
+  assert.equal(hv.body.html, '<h1>two</h1>')
+  assert.equal(hv.body.version, 2)
+  const hMissing = fakeRes()
+  await historyEntry.handler(
+    { method: 'GET', url: '/jobcv/history?session=s1&version=99' },
+    hMissing,
+  )
+  assert.equal(hMissing.code, 404)
+  const hBad = fakeRes()
+  await historyEntry.handler({ method: 'GET', url: '/jobcv/history?session=s1&version=abc' }, hBad)
+  assert.equal(hBad.code, 400)
 
   const restoreEntry = entryFor(verGroups, '/jobcv/restore')
   assert.equal(restoreEntry.path, '/jobcv/restore')

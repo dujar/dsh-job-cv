@@ -51,6 +51,20 @@ section of the CV: its own version line (`POST /jobcv/letter`), its own
 `letter/` folder beside `cv/`. Revising a paragraph of the letter should not
 renumber the CV's history.
 
+### History as a timeline
+
+**History** in the toolbar opens a timeline of saved versions, newest first,
+each labelled with the note its author wrote ("Quantified the the delivery
+bullets") rather than a bare timestamp. Clicking an entry **shows** that
+version in the preview — bodies are fetched one at a time
+(`GET /jobcv/history?session=…&version=N`), never shipped with the list.
+
+Looking changes nothing. A banner says so and offers the two ways out:
+**Restore vN** or **Back to vN**. Restoring is a separate, deliberate gesture,
+and it saves forward as a new version labelled `Restored vN`, so the timeline
+explains its own jumps and nothing is ever lost by going back. A save landing
+while you are looking at an old version returns you to the current one.
+
 ### Reviewing changes before they happen
 
 The agent does not save wording changes — it proposes them. A pending
@@ -81,7 +95,9 @@ own half-typed draft, the message is appended below it and left unsent
 instead — `setDraft` writes the whole draft, so replacing it would destroy
 your text and submitting would send it half-written.
 
-While the agent works, the preview says so: the first CV shows a shimmering
+While the agent works, three dots swell in sequence — over the document, and
+in the dock, so a folded-away preview still shows that something is happening.
+The preview also says so more fully: the first CV shows a shimmering
 A4 skeleton (there is nothing to blur yet, and the starter template is not
 your document), and a revision blurs the version on screen so it reads as
 superseded while staying legible. Both clear the moment a newer version
