@@ -50,6 +50,10 @@ assert.ok(
   'saving the letter through the CV route would overwrite the CV',
 )
 assert.ok(
+  skill.includes('ITS FIRST LINE NAMES THE DOCUMENT'),
+  'a marked-up request says whether it is about the CV or the letter, and the contract says to read it',
+)
+assert.ok(
   skill.includes('CONTENT CHANGES NEED THE USER TO SAY YES'),
   'wording is the user decision, not the agent one',
 )
@@ -84,10 +88,13 @@ function entryFor(all, path) {
 const paths = groups.flatMap((g) => g.entries.map((e) => e.path))
 assert.deepEqual(paths, [...new Set(paths)], 'one registration per exact path')
 assert.deepEqual(paths.sort(), [
+  '/jobcv/brief',
   '/jobcv/doc',
+  '/jobcv/fit',
   '/jobcv/history',
   '/jobcv/intake',
   '/jobcv/letter',
+  '/jobcv/post',
   '/jobcv/proposal',
   '/jobcv/proposal/decision',
   '/jobcv/restore',
@@ -253,7 +260,7 @@ await guardHandler(skillEntry, guardDeps)(
 assert.equal(wrongVerb.code, 405)
 
 // ---- the candidacy + intake routes ----
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join as pathJoin } from 'node:path'
 const wsRoot = await mkdtemp(pathJoin(tmpdir(), 'jobcv-routes-'))
@@ -461,3 +468,164 @@ assert.equal(boom.code, 500)
 assert.equal(boom.body.error, 'kaboom')
 
 console.log('ok  routes + skill contract')
+
+// ---- the job post is stored, mirrored and readable ----
+import { createDocStore } from '../lib/store/doc-store.js'
+// The post is what every other file in the candidacy folder is an answer to,
+// and it is the one that disappears: postings get pulled and links rot.
+{
+  const home = await mkdtemp(pathJoin(tmpdir(), 'dsh-job-cv-post-'))
+  const store = createDocStore(home)
+  const workspace = pathJoin(home, 'acme', 'staff-engineer')
+  await mkdir(workspace, { recursive: true })
+  await store.setWorkspace('s1', workspace, 'https://jobs.example/42', 'Acme', 'Staff Engineer')
+
+  const groups = defineJobCvRoutes({
+    store,
+    resolveRoot: () => home,
+    intakeRoot: home,
+    sendText: () => {},
+    skillText: '',
+  })
+  const post = entryFor(groups, '/jobcv/post')
+  const fit = entryFor(groups, '/jobcv/fit')
+
+  const empty = fakeRes()
+  await post.handler({ method: 'GET', url: '/jobcv/post?session=s1' }, empty)
+  assert.equal(empty.body.text, '', 'no post yet reads as empty, not as an error')
+
+  const saved = fakeRes()
+  await post.handler(
+    fakeReq('POST', '/jobcv/post', { sessionId: 's1', text: 'We are hiring a Staff Engineer.' }),
+    saved,
+  )
+  assert.equal(saved.code, 200)
+  assert.equal(saved.body.chars, 31)
+
+  const read = fakeRes()
+  await post.handler({ method: 'GET', url: '/jobcv/post?session=s1' }, read)
+  assert.equal(read.body.text, 'We are hiring a Staff Engineer.')
+  assert.equal(read.body.jobUrl, 'https://jobs.example/42', 'the post carries its own link back')
+  assert.equal(
+    await readFile(pathJoin(workspace, 'notes', 'job-post.txt'), 'utf8'),
+    'We are hiring a Staff Engineer.',
+    'and lands in the candidacy folder, where it outlives the posting',
+  )
+
+  const blank = fakeRes()
+  await post.handler(fakeReq('POST', '/jobcv/post', { sessionId: 's1', text: '  ' }), blank)
+  assert.equal(blank.code, 400, 'an empty post is not a post')
+
+  // A session that ran before this route existed still has one to show: the
+  // contract has always told the agent to write notes/job-post.txt.
+  const store2 = createDocStore(pathJoin(home, 'other'))
+  await store2.setWorkspace('s2', workspace)
+  const legacy = fakeRes()
+  const groups2 = defineJobCvRoutes({
+    store: store2,
+    resolveRoot: () => home,
+    intakeRoot: home,
+    sendText: () => {},
+    skillText: '',
+  })
+  await entryFor(groups2, '/jobcv/post').handler(
+    { method: 'GET', url: '/jobcv/post?session=s2' },
+    legacy,
+  )
+  assert.equal(legacy.body.text, 'We are hiring a Staff Engineer.', 'read from the folder')
+  assert.equal(legacy.body.source, 'agent')
+
+  // ---- the posting page: the same posting, styled, with the CV's gaps marked ----
+  const page = '<html><body><mark class="dsh-gap">2 leading others</mark></body></html>'
+  const paged = fakeRes()
+  await post.handler(
+    fakeReq('POST', '/jobcv/post', { sessionId: 's1', text: 'We are hiring.', html: page }),
+    paged,
+  )
+  assert.equal(paged.code, 200)
+  const pagedGet = fakeRes()
+  await post.handler({ method: 'GET', url: '/jobcv/post?session=s1' }, pagedGet)
+  assert.ok(pagedGet.body.html.includes('dsh-gap'), 'the page rides with the text it renders')
+  assert.ok(pagedGet.body.htmlUpdatedAt > 0)
+  const pagedDoc = await store.get('s1')
+  assert.ok(pagedDoc.postHtmlUpdatedAt > 0, 'the doc carries the page as a marker only')
+  assert.equal(
+    await readFile(pathJoin(workspace, 'notes', 'job-post.html'), 'utf8'),
+    page,
+    'and the candidacy folder holds the same page the preview shows',
+  )
+
+  // ---- the fit rides in the document payload, so the poll picks it up ----
+  await store.save('s1', { html: '<html>v1</html>' })
+  const scored = fakeRes()
+  await fit.handler(
+    fakeReq('POST', '/jobcv/fit', {
+      sessionId: 's1',
+      score: 68,
+      verdict: 'no evidence of the scope they ask for',
+      gaps: [
+        { requirement: 'Kubernetes at scale', severity: 'blocker', fix: 'How many clusters?' },
+      ],
+    }),
+    scored,
+  )
+  assert.equal(scored.code, 200)
+  assert.equal(scored.body.score, 68)
+  const doc = await store.get('s1')
+  assert.equal(doc.fit.score, 68, 'the fit rides in /jobcv/doc — the poll needs no second request')
+  assert.equal(doc.postChars, 14, 'the post rides as a MARKER only; the body has its own route')
+  assert.ok(doc.postUpdatedAt > 0)
+
+  const bad = fakeRes()
+  await fit.handler(fakeReq('POST', '/jobcv/fit', { sessionId: 's1', verdict: 'good' }), bad)
+  assert.equal(bad.code, 400, 'a fit with no score is a panel with an empty heading')
+
+  // ---- the brief: the posting broken into what a candidate reads ----
+  const briefEntry = entryFor(groups, '/jobcv/brief')
+  const briefed = fakeRes()
+  await briefEntry.handler(
+    fakeReq('POST', '/jobcv/brief', {
+      sessionId: 's1',
+      sections: [
+        {
+          title: 'About the company',
+          body: 'Acme runs ledgers, since 2009.',
+          source: 'company site',
+        },
+        { title: 'The job', body: 'You own the platform.', source: 'posting' },
+      ],
+      meta: [
+        { label: 'Location', value: 'Berlin (hybrid)' },
+        { label: 'Posted', value: '7 days ago' },
+      ],
+    }),
+    briefed,
+  )
+  assert.equal(briefed.code, 200)
+  assert.equal(briefed.body.sections, 2)
+  const briefedDoc = await store.get('s1')
+  assert.ok(briefedDoc.briefUpdatedAt > 0, 'the doc carries the marker, not the body')
+  assert.equal(briefedDoc.brief, undefined, 'the poll payload stays light')
+
+  const briefedGet = fakeRes()
+  await briefEntry.handler({ method: 'GET', url: '/jobcv/brief?session=s1' }, briefedGet)
+  assert.equal(briefedGet.body.brief.sections[0].source, 'company site')
+
+  const noBrief = fakeRes()
+  await briefEntry.handler(
+    fakeReq('POST', '/jobcv/brief', { sessionId: 's1', sections: [] }),
+    noBrief,
+  )
+  assert.equal(noBrief.code, 400, 'a brief with nothing in it is not a brief')
+
+  // A save does not clear the score — it dates it. A blank panel would read
+  // as "nothing happened"; a stale one says what it is stale against.
+  await store.save('s1', { html: '<html>v2</html>' })
+  const after = await store.get('s1')
+  assert.equal(after.version, 2)
+  assert.equal(after.fit.score, 68)
+  assert.equal(after.fit.basedOnVersion, 1, 'and still names the version it judged')
+  assert.equal(after.postChars, 14, 'the post survives a save too')
+
+  await rm(home, { recursive: true, force: true })
+}
