@@ -21,6 +21,7 @@ export default [
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
         MutationObserver: 'readonly',
+        ResizeObserver: 'readonly',
         getComputedStyle: 'readonly',
         process: 'readonly',
         console: 'readonly',
