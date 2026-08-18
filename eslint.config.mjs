@@ -31,6 +31,15 @@ export default [
     },
     rules: {
       'no-unused-vars': ['error', { args: 'none', caughtErrors: 'none' }],
+      // `var` hoists, so a read above its declaration yields undefined rather
+      // than throwing — and `undefined !== null` is true, which is how the
+      // preview came to believe it was showing a version it did not have.
+      // Function declarations hoist by design here: the client fragments are
+      // one shared scope and call across each other freely.
+      'no-use-before-define': [
+        'error',
+        { functions: false, classes: false, variables: true, allowNamedExports: true },
+      ],
     },
   },
   {
@@ -40,6 +49,10 @@ export default [
       // fragments share one IIFE scope: names defined in 010, used in 050
       'no-unused-vars': 'off',
       'no-undef': 'off',
+      'no-use-before-define': [
+        'error',
+        { functions: false, classes: false, variables: true, allowNamedExports: true },
+      ],
     },
   },
 ]
