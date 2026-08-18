@@ -1,0 +1,7 @@
+node_modules
+lib/client.js
+package-lock.json
+# partial IIFE pieces: 010 opens the ModuleLoader wrapper, 060 closes it —
+# not standalone-parseable
+lib/client/010-preamble.js
+lib/client/060-plugin-wiring.js

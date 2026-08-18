@@ -1,0 +1,10 @@
+# dsh-job-cv bundle patch
+#
+# Mounts the host half (which seeds the "job" agent preset into the
+# harness-home user preset root at $DSH_HOME/.agent-presets/job and serves
+# the /jobcv/* document routes) into the web profile. The browser half is
+# discovered automatically through the `dsh.client` declaration in
+# package.json.
+- insert:
+    - id: jobcv
+      name: 'dsh-job-cv'
