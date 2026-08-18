@@ -137,37 +137,61 @@ assert.ok(one.includes('Revise one part of my CV (currently v1)'))
 assert.ok(one.includes('What is needed: improve this'), 'an empty comment still says something')
 assert.ok(!one.includes('Job post:'), 'no job link, no job line')
 
-// ---- composer adapter ----
-const calls = []
-assert.equal(
-  A.sendToComposer({ appendText: (t) => calls.push(['appendText', t]) }, 'hi'),
-  'appendText',
-)
-assert.deepEqual(calls[0], ['appendText', 'hi'])
-assert.equal(A.sendToComposer({ setDraft: () => {} }, 'hi'), 'setDraft')
-// an unknown-but-plausible name is still found
-assert.equal(A.sendToComposer({ appendComposerText: () => {} }, 'hi'), 'appendComposerText')
-// a throwing action falls through to the next candidate
-assert.equal(
-  A.sendToComposer(
-    {
-      appendText: () => {
-        throw new Error('nope')
-      },
-      setText: () => {},
-    },
-    'hi',
-  ),
-  'setText',
-)
-// nothing usable and no clipboard: reported, never silently dropped
-assert.equal(A.sendToComposer({ unrelated: () => {} }, 'hi'), null)
-assert.equal(A.sendToComposer(undefined, 'hi'), null)
-// clipboard fallback
+// ---- composer delivery ----
+// The documented face (dsh-client-ui-conversation): setDraft writes the FULL
+// next draft, submit sends it. An empty composer therefore auto-sends.
+let wrote = null
+let submitted = 0
+const composer = {
+  setDraft: (t) => (wrote = t),
+  submit: () => (submitted += 1),
+}
+assert.equal(A.deliverToComposer(composer, 'hello', ''), 'sent')
+assert.equal(wrote, 'hello')
+assert.equal(submitted, 1)
+
+// A draft the user is still typing must not be replaced or sent half-written:
+// the message is appended below it and left for them.
+wrote = null
+submitted = 0
+assert.equal(A.deliverToComposer(composer, 'my note', 'half a thought'), 'queued')
+assert.equal(wrote, 'half a thought\n\nmy note', 'their words are kept, ours follow')
+assert.equal(submitted, 0, 'nothing is sent on the user behalf')
+
+// whitespace-only counts as empty
+wrote = null
+submitted = 0
+assert.equal(A.deliverToComposer(composer, 'x', '   \n '), 'sent')
+assert.equal(wrote, 'x')
+
+// a write face with no submit still delivers, it just cannot send
+assert.equal(A.deliverToComposer({ setDraft: () => {} }, 'x', ''), 'queued')
+// a throwing action falls back rather than losing the text
 let clipped = null
 stubNavigator({ clipboard: { writeText: (t) => (clipped = t) } })
-assert.equal(A.sendToComposer(null, 'hi'), 'clipboard')
-assert.equal(clipped, 'hi')
+assert.equal(
+  A.deliverToComposer(
+    {
+      setDraft: () => {
+        throw new Error('nope')
+      },
+    },
+    'rescue me',
+    '',
+  ),
+  'clipboard',
+)
+assert.equal(clipped, 'rescue me')
+assert.equal(A.deliverToComposer(null, 'hi', ''), 'clipboard')
+stubNavigator({})
+assert.equal(A.deliverToComposer({ unrelated: () => {} }, 'hi', ''), null)
+
+// the outcome the user is told about — a successful send needs no words,
+// the chat itself is the feedback
+assert.equal(A.deliveryNotice('sent'), null)
+assert.ok(A.deliveryNotice('queued').includes('press enter'))
+assert.ok(A.deliveryNotice('clipboard').includes('clipboard'))
+assert.ok(A.deliveryNotice(null).includes('nothing was sent'))
 
 assert.ok(A.COMMENT_PRESETS.length >= 4)
 

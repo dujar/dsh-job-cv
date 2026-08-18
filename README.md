@@ -51,6 +51,19 @@ numbers", "Shorten this", …) fill in the common asks. Notes queue up, so
 one round of review becomes **one** chat message rather than one message
 per fix — each send costs the agent a full turn and a document rewrite.
 
+Sending is automatic: the composer's documented face is `setDraft` +
+`submit`, so a finished comment goes straight to the agent. If you have your
+own half-typed draft, the message is appended below it and left unsent
+instead — `setDraft` writes the whole draft, so replacing it would destroy
+your text and submitting would send it half-written.
+
+While the agent works, the preview says so: the first CV shows a shimmering
+A4 skeleton (there is nothing to blur yet, and the starter template is not
+your document), and a revision blurs the version on screen so it reads as
+superseded while staying legible. Both clear the moment a newer version
+lands, and give up after six minutes so a turn that answers without saving
+cannot leave the preview blurred forever.
+
 The message names the section, a CSS-ish path and the exact current text
 for every note, and closes by asking the agent to save the revision _and_
 answer with judgement: whether each edit really strengthens the CV for
