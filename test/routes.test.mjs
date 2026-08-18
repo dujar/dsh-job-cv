@@ -43,6 +43,11 @@ assert.ok(
   'the contract explains where the session id comes from',
 )
 assert.ok(skill.includes('/jobcv/proposal'), 'the contract routes content changes through review')
+assert.ok(skill.includes('/jobcv/letter'), 'the contract names the letter route')
+assert.ok(
+  skill.includes('NOT /jobcv/doc'),
+  'saving the letter through the CV route would overwrite the CV',
+)
 assert.ok(
   skill.includes('CONTENT CHANGES NEED THE USER TO SAY YES'),
   'wording is the user decision, not the agent one',
@@ -81,6 +86,7 @@ assert.deepEqual(paths.sort(), [
   '/jobcv/doc',
   '/jobcv/history',
   '/jobcv/intake',
+  '/jobcv/letter',
   '/jobcv/proposal',
   '/jobcv/proposal/decision',
   '/jobcv/restore',
@@ -167,6 +173,41 @@ assert.equal(p3.body.version, 7)
 const m = fakeRes()
 await docEntry.handler({ method: 'DELETE', url: '/jobcv/doc' }, m)
 assert.equal(m.code, 405)
+
+// ---- the cover letter is a SECOND document, with its own version line ----
+{
+  let savedHtml = null
+  const letterGroups = defineJobCvRoutes({
+    store: {
+      get: async () => ({ letter: { version: 2, html: '<p>Dear team</p>', updatedAt: 1 } }),
+      saveLetter: async (sid, doc) => {
+        savedHtml = doc.html
+        return 3
+      },
+    },
+    skillText: skill,
+    sendText: () => {},
+  })
+  const letterEntry = entryFor(letterGroups, '/jobcv/letter')
+  const lg = fakeRes()
+  await letterEntry.handler({ method: 'GET', url: '/jobcv/letter?session=s1' }, lg)
+  assert.equal(lg.code, 200)
+  assert.equal(lg.body.letter.version, 2)
+
+  const lp = fakeRes()
+  await letterEntry.handler(
+    fakeReq('POST', '/jobcv/letter', { sessionId: 's1', html: '<p>hi</p>' }),
+    lp,
+  )
+  assert.equal(lp.code, 200)
+  assert.equal(lp.body.version, 3, 'the letter versions independently of the CV')
+  assert.equal(savedHtml, '<p>hi</p>')
+
+  // an empty letter is not a letter
+  const lbad = fakeRes()
+  await letterEntry.handler(fakeReq('POST', '/jobcv/letter', { sessionId: 's1', html: '  ' }), lbad)
+  assert.equal(lbad.code, 400)
+}
 
 // ---- the guards the webServer actually mounts ----
 // The handler assertions above call entry.handler directly, which skips the

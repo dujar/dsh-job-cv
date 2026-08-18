@@ -184,6 +184,7 @@ try {
     updatedAt: 0,
     workspace: '',
     proposal: null,
+    letter: null,
     company: '',
     jobTitle: '',
     history: [],
