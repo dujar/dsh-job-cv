@@ -22,6 +22,9 @@ they provide together with their current CV.
     `<root>/<company>/<job-id>/` and record it on the session
   - `POST /jobcv/intake` — stage a CV file dropped in the browser, return
     its path
+  - `GET /jobcv/history?session=<id>` — the saved versions, newest first
+  - `POST /jobcv/restore` — roll the document back to an earlier version
+    (a restore is itself a save, so the rollback is never destructive)
   - `GET /jobcv/skill` — the agent-facing contract (A4, self-contained,
     truthful tailoring)
 - **Client half** (`lib/client.js`, built from `lib/client/` fragments)
@@ -76,9 +79,13 @@ can never appear in the exported PDF.
    `Content-Type: application/json`; the `/jobcv/skill` contract spells
    the call out, because the trust gate rejects the content type `curl -d`
    would otherwise pick.
-4. The dock shows the workspace folder and the files the agent has saved
-   into it, refreshed with the same poll as the preview.
+4. The dock shows the workspace folder (labeled with company — job title
+   when known) and the files the agent has saved into it, refreshed with
+   the same poll as the preview.
 5. Iterate by chatting ("make the summary sharper", "cut to one page").
+   **History** on the preview toolbar lists every saved version, newest
+   first, and restores any of them with one click — restoring is itself a
+   save, so the old current version stays in history.
 6. **Export PDF** on the preview toolbar.
 
 ## Development

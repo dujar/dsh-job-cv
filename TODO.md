@@ -41,8 +41,9 @@ prefers appending, which is the safer of the two.
 
 - The preview polls `/jobcv/doc` every 2.5s. A push channel (SSE, or the
   harness's own session stream) would drop the latency and the idle traffic.
-- History is kept (last 10 versions, server-side) but nothing exposes it —
-  no rollback UI, and `GET /jobcv/doc` only reports `historyDepth`.
 - `test/annotate.test.mjs` builds fake nodes by hand. If a DOM harness ever
   lands here (dsh-trader uses jsdom), the picking effect in `CvPane` itself
   becomes reachable, not just its helpers.
+- The rollback UI restores whole versions. A finer "restore just this
+  section from an older version" would need diffing the two documents —
+  probably more than the workflow needs today.
