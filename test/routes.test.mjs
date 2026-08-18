@@ -2,7 +2,7 @@ import { strict as assert } from 'node:assert'
 import { defineJobCvRoutes } from '../lib/routes/routes.js'
 import { renderRouteSummary, guardHandler } from '../lib/routes/mount.js'
 import { isTrustedRequest, readJsonBody, sendJson } from '../lib/http/http-utils.js'
-import { skillInstructions } from '../lib/preset/preset-seed.js'
+import { skillInstructions, PRESET_COMPOSITION } from '../lib/preset/preset-seed.js'
 
 // the contract the seeded /job skill points the agent at
 const skill = skillInstructions()
@@ -18,6 +18,26 @@ assert.ok(
 )
 assert.ok(skill.includes('What is needed:'), 'skill decodes the marked-up revision format')
 assert.ok(skill.includes('advice'), 'skill tells the agent to answer with judgement')
+
+// The preset must not enable a web capability the harness cannot serve.
+// dsh-web resolves a provider per capability and only a SEARCH provider is
+// ever registered (dsh-web-search-deepseek); nothing calls
+// registerFetchProvider. web_fetch therefore dies on every call with
+// "no usable web provider is registered" — which is why the shipped
+// 'standard' preset also pins fetch:false.
+assert.ok(
+  /- id: tool-web[\s\S]*?fetch: false/.test(PRESET_COMPOSITION),
+  'tool-web must keep fetch disabled: there is no fetch provider to serve it',
+)
+assert.ok(
+  !/fetch: true/.test(PRESET_COMPOSITION),
+  'nothing in the preset may turn web fetch back on',
+)
+assert.ok(
+  skill.includes('no usable web provider is registered'),
+  'the contract names the exact error, so the agent does not retry web_fetch',
+)
+assert.ok(skill.includes('curl -sSL'), 'the contract shows how to read a post instead')
 
 // route surface: exactly ONE exact-path registration per route (the webServer
 // rejects duplicate exact paths — the boot crash this test guards against)
