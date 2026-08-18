@@ -37,6 +37,23 @@ Also worth settling: whether the right call is `append` (add to whatever the
 user has already typed) or `set` (replace the draft). The current order
 prefers appending, which is the safer of the two.
 
+## Reading job posts: no fetch provider exists
+
+`web_fetch` cannot work in this harness. `dsh-web` resolves a provider per
+capability, and while `dsh-web-search-deepseek` calls `registerSearchProvider`,
+**nothing anywhere calls `registerFetchProvider`** — so every `web_fetch` call
+raises `WEB_PROVIDER_UNAVAILABLE` ("no usable web provider is registered").
+The shipped `standard` preset pins `fetch: false` for exactly this reason; the
+job preset now does too, and the contract tells the agent to read the post with
+`curl | perl` instead. `test/routes.test.mjs` pins this so it cannot regress.
+
+Worth deciding: the host half could register its own fetch provider
+(`ctx.web.registerFetchProvider`) and make `web_fetch` genuinely work for job
+posts — better extraction than a shell pipeline, and it would benefit every
+preset. That means owning redirect/size/timeout limits and an SSRF policy
+(a job link is user-supplied and would be fetched by the host), so it is a
+real feature rather than a config change. Until then the shell path stands.
+
 ## Smaller
 
 - The preview polls `/jobcv/doc` every 2.5s. A push channel (SSE, or the

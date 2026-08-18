@@ -94,6 +94,36 @@ can never appear in the exported PDF.
   (`lib/client.js` is generated and stays committed).
 - `npm test` verifies the built bundle matches its fragments and runs the
   host-half tests.
+
+### The candidacy folder
+
+One folder per application, upserted at
+`$DSH_JOB_CV_ROOT` (default `$DSH_HOME/dsh-job-cv/applications`)`/<company>/<job-id>/`:
+
+```
+acme-corp/3812345678/
+  README.md      what this application is, and the job link
+  cv/            v1.html, v2.html … plus latest.html
+  source/        the CV as supplied — never edited
+  notes/         the fetched job post, research, cover letter drafts
+```
+
+The host derives both folder names (`slugify` for the company; the job's own
+id from the URL, else a slug of the last path segment, else a digest of the
+link). That is what makes the upsert an upsert: a second session about the
+same job — even typing the company differently — lands in the same folder and
+gets `created:false`, the agent's cue to say it is resuming rather than
+starting over.
+
+Every save is mirrored into `cv/` from inside the store's write lock, so the
+folder holds the actual document rather than only a README, and `latest.html`
+is directly openable and printable outside the harness. Mirroring never fails
+a save: the session file is the source of truth, and a folder that has been
+moved or made read-only only logs a warning. A CV dropped into the start form
+lands in `source/` once the folder exists, and in per-session staging before
+that (browsers withhold the real path of a dropped file, so its bytes are
+uploaded).
+
 - Documents persist per session under `$DSH_HOME/dsh-job-cv/sessions/`
   with the last 10 versions kept in history — the groundwork for a fuller
   job workspace (rollback, multiple documents per job application).

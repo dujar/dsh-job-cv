@@ -1,5 +1,5 @@
 import { strict as assert } from 'node:assert'
-import { mkdtemp, rm, readdir, readFile } from 'node:fs/promises'
+import { mkdtemp, rm, readdir, readFile, stat, lstat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
@@ -10,8 +10,15 @@ import {
   upsertCandidacy,
   applicationsRoot,
   listCandidacyFiles,
+  CANDIDACY_DIRS,
+  mirrorCvVersion,
 } from '../lib/store/workspace.js'
-import { saveIntakeFile, sanitizeFileName, INTAKE_LIMIT } from '../lib/store/intake.js'
+import {
+  saveIntakeFile,
+  intakeDirFor,
+  sanitizeFileName,
+  INTAKE_LIMIT,
+} from '../lib/store/intake.js'
 
 // ---- slugging: the folder names the host derives, never the agent ----
 assert.equal(slugify('Acme Corp', 'x'), 'acme-corp')
@@ -93,6 +100,55 @@ try {
   assert.ok(files[0].mtime > 0)
   assert.deepEqual(await listCandidacyFiles(join(dir, 'does-not-exist')), [])
 
+  // ---- the candidacy layout ----
+  // Scaffolded on upsert so the agent never has to invent a place for things.
+  const home = join(dir, 'acme-corp', '42')
+  for (const [name] of CANDIDACY_DIRS) {
+    assert.equal((await stat(join(home, name))).isDirectory(), true, name + '/ is scaffolded')
+  }
+  // ...and on RE-open too, so a folder from an older build gains the layout
+  await rm(join(home, 'notes'), { recursive: true, force: true })
+  await upsertCandidacy(dir, { company: 'Acme Corp', jobId: '42' })
+  assert.equal((await stat(join(home, 'notes'))).isDirectory(), true, 'relaid on re-upsert')
+
+  const layoutReadme = await readFile(join(home, 'README.md'), 'utf8')
+  for (const [name] of CANDIDACY_DIRS) {
+    assert.ok(layoutReadme.includes('`' + name + '/`'), 'README explains ' + name + '/')
+  }
+
+  // ---- mirrorCvVersion: the folder holds the actual CV ----
+  assert.equal(await mirrorCvVersion('', 1, '<h1>x</h1>'), null, 'no workspace, no mirror')
+  assert.equal(await mirrorCvVersion(home, 0, '<h1>x</h1>'), null, 'version 0 is not a save')
+  assert.equal(await mirrorCvVersion(home, 1, ''), null, 'an empty document is not mirrored')
+
+  await mirrorCvVersion(home, 1, '<h1>one</h1>')
+  await mirrorCvVersion(home, 2, '<h1>two</h1>')
+  assert.equal(await readFile(join(home, 'cv', 'v1.html'), 'utf8'), '<h1>one</h1>')
+  assert.equal(await readFile(join(home, 'cv', 'v2.html'), 'utf8'), '<h1>two</h1>')
+  assert.equal(
+    await readFile(join(home, 'cv', 'latest.html'), 'utf8'),
+    '<h1>two</h1>',
+    'latest.html tracks the newest save',
+  )
+  // a copy, not a symlink: the folder has to survive being zipped and moved
+  assert.equal((await lstat(join(home, 'cv', 'latest.html'))).isSymbolicLink(), false)
+  assert.deepEqual(
+    (await readdir(join(home, 'cv'))).filter((f) => f.includes('.tmp-')),
+    [],
+    'no temp files left behind',
+  )
+
+  // ---- listing recurses one level, so the scaffold is not a dead end ----
+  const listed = await listCandidacyFiles(home)
+  const names = listed.map((f) => f.name)
+  assert.ok(names.includes('cv/v1.html'), 'nested files come back relative: ' + names.join(', '))
+  assert.ok(names.includes('cv/latest.html'))
+  assert.ok(names.includes('README.md'), 'top-level files still listed')
+  assert.ok(
+    names.every((n) => n.split('/').length <= 2),
+    'one level only — a deep tree cannot flood the list',
+  )
+
   // applicationsRoot: env override wins, else under dshHome
   const prev = process.env.DSH_JOB_CV_ROOT
   try {
@@ -118,19 +174,23 @@ try {
   assert.equal(sanitizeFileName('a'.repeat(200) + '.pdf', 'cv').length <= 100, true)
 
   const staged = await saveIntakeFile(
-    intakeDir,
-    's1',
+    join(intakeDir, 's1'),
     'my cv.pdf',
     Buffer.from('hello').toString('base64'),
   )
+  // an upload goes into the candidacy folder once one exists, staging before
+  assert.equal(intakeDirFor('/intake', 's1', ''), join('/intake', 's1'))
+  assert.equal(intakeDirFor('/intake', 's1', undefined), join('/intake', 's1'))
+  assert.equal(intakeDirFor('/intake', 's1', '/apps/acme/42'), join('/apps/acme/42', 'source'))
+
   assert.equal(staged.bytes, 5)
   assert.equal(staged.path, join(intakeDir, 's1', 'my_cv.pdf'))
   const files = await readdir(join(intakeDir, 's1'))
   assert.deepEqual(files, ['my_cv.pdf'])
 
   // empty / invalid base64 is rejected
-  await assert.rejects(saveIntakeFile(intakeDir, 's1', 'x.pdf', ''), /empty/)
-  await assert.rejects(saveIntakeFile(intakeDir, 's1', 'x.pdf', '???'), /empty/)
+  await assert.rejects(saveIntakeFile(join(intakeDir, 's1'), 'x.pdf', ''), /empty/)
+  await assert.rejects(saveIntakeFile(join(intakeDir, 's1'), 'x.pdf', '???'), /empty/)
 
   assert.equal(INTAKE_LIMIT, 12 * 1024 * 1024)
 } finally {
