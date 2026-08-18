@@ -44,6 +44,7 @@ assert.ok(summary.includes('[dsh-job-cv] host routes ready'))
 assert.ok(summary.includes('GET /jobcv/doc'))
 assert.ok(summary.includes('POST /jobcv/doc'))
 assert.ok(summary.includes('GET /jobcv/skill'))
+assert.ok(summary.includes('GET /jobcv/workspace'))
 assert.ok(summary.includes('POST /jobcv/workspace'))
 assert.ok(summary.includes('POST /jobcv/intake'))
 
@@ -168,7 +169,7 @@ try {
   })
   const wsEntry = wsGroups[1].entries[0]
   assert.equal(wsEntry.path, '/jobcv/workspace')
-  assert.equal(wsEntry.method, 'POST')
+  assert.equal(wsEntry.method, undefined, 'the workspace handler dispatches GET vs POST itself')
 
   // workspace: missing sessionId
   const w1 = fakeRes()
@@ -194,6 +195,46 @@ try {
   assert.equal(w3.body.company, 'acme-corp')
   assert.equal(w3.body.jobId, '42')
   assert.equal(w3.body.created, true)
+
+  // workspace GET: lists the candidacy folder's files for the dock
+  const wsGetStore = {
+    get: async (sid) =>
+      sid === 's1'
+        ? { version: 1, workspace: pathJoin(wsRoot, 'apps', 'acme-corp', '42') }
+        : { version: 0, workspace: '' },
+  }
+  const wsGetGroups = defineJobCvRoutes({
+    store: wsGetStore,
+    applicationsRoot: pathJoin(wsRoot, 'apps'),
+    intakeRoot: pathJoin(wsRoot, 'intake'),
+    skillText: skill,
+    sendText: () => {},
+  })
+  const wsGetEntry = wsGetGroups[1].entries[0]
+  // no workspace yet -> empty listing
+  const wg0 = fakeRes()
+  await wsGetEntry.handler({ method: 'GET', url: '/jobcv/workspace?session=other' }, wg0)
+  assert.equal(wg0.code, 200)
+  assert.equal(wg0.body.path, '')
+  assert.deepEqual(wg0.body.files, [])
+  // workspace present -> files sorted newest first
+  const wg = fakeRes()
+  await wsGetEntry.handler({ method: 'GET', url: '/jobcv/workspace?session=s1' }, wg)
+  assert.equal(wg.code, 200)
+  assert.equal(wg.body.path, pathJoin(wsRoot, 'apps', 'acme-corp', '42'))
+  assert.deepEqual(
+    wg.body.files.map((f) => f.name),
+    ['README.md'],
+    'the breadcrumb written by the upsert is listed',
+  )
+  // missing session
+  const wgMiss = fakeRes()
+  await wsGetEntry.handler({ method: 'GET', url: '/jobcv/workspace' }, wgMiss)
+  assert.equal(wgMiss.code, 400)
+  // wrong verb -> 405
+  const wg405 = fakeRes()
+  await wsGetEntry.handler({ method: 'DELETE', url: '/jobcv/workspace?session=s1' }, wg405)
+  assert.equal(wg405.code, 405)
 
   // intake: rejects a missing or empty payload
   const intakeEntry = wsGroups[1].entries[1]
