@@ -29,6 +29,19 @@ try {
   const again = createDocStore(dir)
   assert.equal((await again.get('s1')).version, 2)
 
+  // setWorkspace records the candidacy dir and makes the jobUrl sticky
+  assert.equal(await store.setWorkspace('s1', '/apps/acme/123', undefined), '/apps/acme/123')
+  const withWs = await store.get('s1')
+  assert.equal(withWs.workspace, '/apps/acme/123')
+  assert.equal(withWs.jobUrl, 'https://j.o/1', 'jobUrl untouched when not given')
+  assert.equal(await store.setWorkspace('s1', '/apps/acme/456', 'https://j.o/2'), '/apps/acme/456')
+  const withWs2 = await store.get('s1')
+  assert.equal(withWs2.workspace, '/apps/acme/456')
+  assert.equal(withWs2.jobUrl, 'https://j.o/2', 'jobUrl replaced when given')
+  // a save after setWorkspace keeps the workspace (no lost update)
+  assert.equal(await store.save('s1', { html: '<html>3</html>' }), 3)
+  assert.equal((await store.get('s1')).workspace, '/apps/acme/456')
+
   // CONCURRENT saves: the per-session lock must serialize them. Without it
   // both reads see the same version, both write N+1, and one document is
   // lost -- and the shared Date.now() temp name made rename() throw ENOENT.
@@ -67,6 +80,7 @@ try {
     html: '',
     jobUrl: '',
     updatedAt: 0,
+    workspace: '',
     history: [],
   })
   assert.deepEqual(normalizeRecord({ version: 3, html: 'x' }).history, [])
