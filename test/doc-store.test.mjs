@@ -1,10 +1,14 @@
 import { strict as assert } from 'node:assert'
 import { createDocStore, sanitizeSessionId, normalizeRecord } from '../lib/store/doc-store.js'
-import { mkdtemp, rm, readFile, writeFile, mkdir } from 'node:fs/promises'
+import { mkdtemp, rm, readFile, writeFile, mkdir, readdir, chmod } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 const dir = await mkdtemp(join(tmpdir(), 'jobcv-store-'))
+// Real writable candidacy folders: saves mirror into them, so pointing these
+// at a path the test user cannot write would only assert the warning path.
+const wsA = join(dir, 'ws-a')
+const wsB = join(dir, 'ws-b')
 try {
   // sanitize: path-safe ids only
   assert.equal(sanitizeSessionId('abc-123_XYZ.42'), 'abc-123_XYZ.42')
@@ -30,28 +34,22 @@ try {
   assert.equal((await again.get('s1')).version, 2)
 
   // setWorkspace records the candidacy dir and makes the jobUrl sticky
-  assert.equal(await store.setWorkspace('s1', '/apps/acme/123', undefined), '/apps/acme/123')
+  assert.equal(await store.setWorkspace('s1', wsA, undefined), wsA)
   const withWs = await store.get('s1')
-  assert.equal(withWs.workspace, '/apps/acme/123')
+  assert.equal(withWs.workspace, wsA)
   assert.equal(withWs.jobUrl, 'https://j.o/1', 'jobUrl untouched when not given')
   assert.equal(
-    await store.setWorkspace(
-      's1',
-      '/apps/acme/456',
-      'https://j.o/2',
-      'Acme Corp',
-      'Senior Engineer',
-    ),
-    '/apps/acme/456',
+    await store.setWorkspace('s1', wsB, 'https://j.o/2', 'Acme Corp', 'Senior Engineer'),
+    wsB,
   )
   const withWs2 = await store.get('s1')
-  assert.equal(withWs2.workspace, '/apps/acme/456')
+  assert.equal(withWs2.workspace, wsB)
   assert.equal(withWs2.jobUrl, 'https://j.o/2', 'jobUrl replaced when given')
   assert.equal(withWs2.company, 'Acme Corp', 'company recorded for the dock label')
   assert.equal(withWs2.jobTitle, 'Senior Engineer')
   // a save after setWorkspace keeps the workspace (no lost update)
   assert.equal(await store.save('s1', { html: '<html>3</html>' }), 3)
-  assert.equal((await store.get('s1')).workspace, '/apps/acme/456')
+  assert.equal((await store.get('s1')).workspace, wsB)
   assert.equal((await store.get('s1')).company, 'Acme Corp', 'company survives a save')
 
   // history(): pickable versions, newest first, no bodies
@@ -72,7 +70,59 @@ try {
   const afterRestore = await store.get('s1')
   assert.equal(afterRestore.version, 5)
   assert.equal(afterRestore.html, '<html>2</html>', 'the old document is back')
-  assert.equal(afterRestore.workspace, '/apps/acme/456', 'workspace survives a restore')
+  assert.equal(afterRestore.workspace, wsB, 'workspace survives a restore')
+
+  // Every save reaches the candidacy folder, restores included, so the folder
+  // holds the CV rather than just a README.
+  const mirrored = await readdir(join(wsB, 'cv'))
+  assert.ok(mirrored.includes('latest.html'), 'latest.html exists: ' + mirrored.join(', '))
+  assert.ok(
+    mirrored.includes('v' + afterRestore.version + '.html'),
+    'the restored version is mirrored too',
+  )
+  assert.equal(
+    await readFile(join(wsB, 'cv', 'latest.html'), 'utf8'),
+    afterRestore.html,
+    'latest.html matches the live document',
+  )
+
+  // A workspace opened after some saves is populated immediately, not left
+  // empty until the next save.
+  const late = createDocStore(join(dir, 'late'))
+  await late.save('l1', { html: '<html>already saved</html>' })
+  const wsLate = join(dir, 'ws-late')
+  await late.setWorkspace('l1', wsLate)
+  assert.equal(
+    await readFile(join(wsLate, 'cv', 'latest.html'), 'utf8'),
+    '<html>already saved</html>',
+  )
+
+  // An unwritable workspace warns but never fails the save: the session file
+  // is the source of truth and a folder that moved or went read-only must not
+  // start rejecting the user's work.
+  const locked = join(dir, 'locked')
+  await mkdir(locked, { recursive: true })
+  await chmod(locked, 0o500)
+  let enforced = true
+  try {
+    await mkdir(join(locked, 'probe'))
+    enforced = false // running as root: permissions prove nothing here
+  } catch {
+    // good — the directory really is unwritable
+  }
+  if (enforced) {
+    const unwritable = createDocStore(join(dir, 'unwritable'))
+    await unwritable.setWorkspace('b1', join(locked, 'acme', '1'))
+    const warn = console.warn
+    console.warn = () => {} // the warning is the point; the noise is not
+    try {
+      assert.equal(await unwritable.save('b1', { html: '<html>still saved</html>' }), 1)
+    } finally {
+      console.warn = warn
+    }
+    assert.equal((await unwritable.get('b1')).html, '<html>still saved</html>')
+  }
+  await chmod(locked, 0o700) // so the temp tree can be removed again
   // ...and the restore is never destructive: v4 lands in history
   const afterVersions = await store.history('s1')
   assert.deepEqual(
@@ -138,7 +188,6 @@ try {
   assert.equal((await createDocStore(shapeDir).get('sx')).version, 3)
 
   // no temp files left behind
-  const { readdir } = await import('node:fs/promises')
   const leftovers = (await readdir(join(dir, 'sessions'))).filter((f) => f.includes('.tmp-'))
   assert.deepEqual(leftovers, [], 'temp files are renamed or cleaned up')
 
