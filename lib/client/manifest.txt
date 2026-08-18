@@ -1,6 +1,7 @@
 # Ordered source fragments for lib/client.js (scripts/build-client.js).
 010-preamble.js
 020-default-cv.js
+025-cv-annotate.js
 030-cv-preview.js
 040-job-layout.js
 050-job-dock.js
