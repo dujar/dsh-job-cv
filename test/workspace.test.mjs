@@ -9,6 +9,7 @@ import {
   candidacyPath,
   upsertCandidacy,
   applicationsRoot,
+  listCandidacyFiles,
 } from '../lib/store/workspace.js'
 import { saveIntakeFile, sanitizeFileName, INTAKE_LIMIT } from '../lib/store/intake.js'
 
@@ -81,6 +82,16 @@ try {
   await upsertCandidacy(dir, { company: 'Acme Corp', jobId: '42', jobTitle: 'Rewritten' })
   const readmeAgain = await readFile(join(dir, 'acme-corp', '42', 'README.md'), 'utf8')
   assert.ok(readmeAgain.includes('Senior Engineer'), 'resume does not rewrite the README')
+
+  // listCandidacyFiles: names + sizes, newest first; missing dir -> []
+  const files = await listCandidacyFiles(join(dir, 'acme-corp', '42'))
+  assert.deepEqual(
+    files.map((f) => f.name),
+    ['README.md'],
+  )
+  assert.ok(files[0].size > 0)
+  assert.ok(files[0].mtime > 0)
+  assert.deepEqual(await listCandidacyFiles(join(dir, 'does-not-exist')), [])
 
   // applicationsRoot: env override wins, else under dshHome
   const prev = process.env.DSH_JOB_CV_ROOT
