@@ -5,7 +5,7 @@
 import js from '@eslint/js'
 
 export default [
-  { ignores: ['node_modules/**', 'lib/client.js', 'lib/client/010-preamble.js', 'lib/client/060-plugin-wiring.js'] },
+  { ignores: ['node_modules/**', 'lib/client/010-preamble.js', 'lib/client/060-plugin-wiring.js'] },
   js.configs.recommended,
   {
     languageOptions: {
@@ -40,6 +40,40 @@ export default [
         'error',
         { functions: false, classes: false, variables: true, allowNamedExports: true },
       ],
+    },
+  },
+  {
+    // The BUILT bundle is the one place the fragments become a single scope,
+    // so it is the only place no-undef can see a name that is used but never
+    // defined anywhere — the failure mode of editing fragments in isolation
+    // (a rewrite once truncated CommentPanel, and nothing noticed until the
+    // dock crashed on click).
+    files: ['lib/client.js'],
+    languageOptions: {
+      sourceType: 'script',
+      globals: {
+        window: 'readonly',
+        document: 'readonly',
+        navigator: 'readonly',
+        location: 'readonly',
+        localStorage: 'readonly',
+        fetch: 'readonly',
+        FileReader: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        MutationObserver: 'readonly',
+        ResizeObserver: 'readonly',
+        getComputedStyle: 'readonly',
+        console: 'readonly',
+        URL: 'readonly',
+      },
+    },
+    rules: {
+      'no-undef': 'error',
+      'no-unused-vars': 'off',
+      'no-use-before-define': 'off', // one hoisted scope by construction
     },
   },
   {
