@@ -28,7 +28,7 @@ const groups = defineJobCvRoutes({
 })
 const paths = groups.flatMap((g) => g.entries.map((e) => e.path))
 assert.deepEqual(paths, [...new Set(paths)], 'one registration per exact path')
-assert.deepEqual(paths.sort(), ['/jobcv/doc', '/jobcv/skill'])
+assert.deepEqual(paths.sort(), ['/jobcv/doc', '/jobcv/intake', '/jobcv/skill', '/jobcv/workspace'])
 
 const summary = renderRouteSummary(
   groups.map((g) => [
@@ -44,6 +44,8 @@ assert.ok(summary.includes('[dsh-job-cv] host routes ready'))
 assert.ok(summary.includes('GET /jobcv/doc'))
 assert.ok(summary.includes('POST /jobcv/doc'))
 assert.ok(summary.includes('GET /jobcv/skill'))
+assert.ok(summary.includes('POST /jobcv/workspace'))
+assert.ok(summary.includes('POST /jobcv/intake'))
 
 // the doc handler dispatches GET vs POST itself
 function fakeRes() {
@@ -138,7 +140,7 @@ await guarded(
 assert.equal(okGuarded.code, 200)
 
 // the method guard fires for entries that declare one
-const skillEntry = groups[1].entries[0]
+const skillEntry = groups[2].entries[0]
 assert.equal(skillEntry.method, 'GET')
 const wrongVerb = fakeRes()
 await guardHandler(skillEntry, guardDeps)(
@@ -146,6 +148,82 @@ await guardHandler(skillEntry, guardDeps)(
   wrongVerb,
 )
 assert.equal(wrongVerb.code, 405)
+
+// ---- the candidacy + intake routes ----
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join as pathJoin } from 'node:path'
+const wsRoot = await mkdtemp(pathJoin(tmpdir(), 'jobcv-routes-'))
+try {
+  const wsGroups = defineJobCvRoutes({
+    store: {
+      get: async () => ({ version: 0 }),
+      setWorkspace: async () => '/apps/acme/job-1',
+    },
+    applicationsRoot: pathJoin(wsRoot, 'apps'),
+    intakeRoot: pathJoin(wsRoot, 'intake'),
+    skillText: skill,
+    sendText: () => {},
+    // real workspace/intake so the upsert really creates a folder
+  })
+  const wsEntry = wsGroups[1].entries[0]
+  assert.equal(wsEntry.path, '/jobcv/workspace')
+  assert.equal(wsEntry.method, 'POST')
+
+  // workspace: missing sessionId
+  const w1 = fakeRes()
+  await wsEntry.handler(fakeReq('POST', '/jobcv/workspace', { company: 'Acme' }), w1)
+  assert.equal(w1.code, 400)
+  // workspace: missing company
+  const w2 = fakeRes()
+  await wsEntry.handler(fakeReq('POST', '/jobcv/workspace', { sessionId: 's1' }), w2)
+  assert.equal(w2.code, 400)
+  // workspace: happy path upserts and records the dir
+  const w3 = fakeRes()
+  await wsEntry.handler(
+    fakeReq('POST', '/jobcv/workspace', {
+      sessionId: 's1',
+      company: 'Acme Corp',
+      jobUrl: 'https://jobs.example.com/42',
+    }),
+    w3,
+  )
+  assert.equal(w3.code, 200)
+  assert.equal(w3.body.ok, true)
+  assert.equal(w3.body.path, pathJoin(wsRoot, 'apps', 'acme-corp', '42'))
+  assert.equal(w3.body.company, 'acme-corp')
+  assert.equal(w3.body.jobId, '42')
+  assert.equal(w3.body.created, true)
+
+  // intake: rejects a missing or empty payload
+  const intakeEntry = wsGroups[1].entries[1]
+  assert.equal(intakeEntry.path, '/jobcv/intake')
+  const i1 = fakeRes()
+  await intakeEntry.handler(fakeReq('POST', '/jobcv/intake', {}), i1)
+  assert.equal(i1.code, 400)
+  const i2 = fakeRes()
+  await intakeEntry.handler(
+    fakeReq('POST', '/jobcv/intake', { sessionId: 's1', filename: 'cv.pdf', dataBase64: '' }),
+    i2,
+  )
+  assert.equal(i2.code, 400)
+  // intake: happy path stages the file and returns its path
+  const i3 = fakeRes()
+  await intakeEntry.handler(
+    fakeReq('POST', '/jobcv/intake', {
+      sessionId: 's1',
+      filename: 'cv.pdf',
+      dataBase64: Buffer.from('%PDF-1.4 hello').toString('base64'),
+    }),
+    i3,
+  )
+  assert.equal(i3.code, 200)
+  assert.equal(i3.body.ok, true)
+  assert.equal(i3.body.bytes, 14)
+  assert.ok(i3.body.path.endsWith('cv.pdf'), 'staged under the intake root with the sanitized name')
+} finally {
+  await rm(wsRoot, { recursive: true, force: true })
+}
 
 // a throwing handler becomes a 500 rather than an unhandled rejection
 const boom = fakeRes()
