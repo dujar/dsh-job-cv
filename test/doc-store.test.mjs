@@ -183,6 +183,7 @@ try {
     jobUrl: '',
     updatedAt: 0,
     workspace: '',
+    proposal: null,
     company: '',
     jobTitle: '',
     history: [],

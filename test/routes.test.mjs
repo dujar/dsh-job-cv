@@ -42,6 +42,19 @@ assert.ok(
   skill.includes('YOUR SESSION ID'),
   'the contract explains where the session id comes from',
 )
+assert.ok(skill.includes('/jobcv/proposal'), 'the contract routes content changes through review')
+assert.ok(
+  skill.includes('CONTENT CHANGES NEED THE USER TO SAY YES'),
+  'wording is the user decision, not the agent one',
+)
+assert.ok(
+  skill.includes('Formatting is NOT a content change'),
+  'layout work still saves directly — approving a margin helps nobody',
+)
+assert.ok(
+  skill.includes('SEVERAL PARTS'),
+  'one comment usually implicates more than the part commented on',
+)
 assert.ok(
   skill.includes('do not guess'),
   'a guessed session id saves successfully into a document nobody watches',
@@ -54,12 +67,22 @@ const groups = defineJobCvRoutes({
   skillText: skill,
   sendText: () => {},
 })
+/** Look a route up by path — positional indexing renumbers whenever a group is added. */
+function entryFor(all, path) {
+  for (const group of all) {
+    for (const entry of group.entries) if (entry.path === path) return entry
+  }
+  throw new Error('no route declared for ' + path)
+}
+
 const paths = groups.flatMap((g) => g.entries.map((e) => e.path))
 assert.deepEqual(paths, [...new Set(paths)], 'one registration per exact path')
 assert.deepEqual(paths.sort(), [
   '/jobcv/doc',
   '/jobcv/history',
   '/jobcv/intake',
+  '/jobcv/proposal',
+  '/jobcv/proposal/decision',
   '/jobcv/restore',
   '/jobcv/skill',
   '/jobcv/workspace',
@@ -98,7 +121,7 @@ function fakeRes() {
     },
   }
 }
-const docEntry = groups[0].entries[0]
+const docEntry = entryFor(groups, '/jobcv/doc')
 
 // GET: requires ?session=
 const g1 = fakeRes()
@@ -149,7 +172,7 @@ assert.equal(m.code, 405)
 // The handler assertions above call entry.handler directly, which skips the
 // wrapper the routes are really registered with. Exercise it for real.
 const guardDeps = { isTrusted: isTrustedRequest, readJsonBody, sendJson }
-const guarded = guardHandler(groups[0].entries[0], guardDeps)
+const guarded = guardHandler(entryFor(groups, '/jobcv/doc'), guardDeps)
 
 const untrusted = fakeRes()
 await guarded(
@@ -178,7 +201,7 @@ await guarded(
 assert.equal(okGuarded.code, 200)
 
 // the method guard fires for entries that declare one
-const skillEntry = groups[3].entries[0]
+const skillEntry = entryFor(groups, '/jobcv/skill')
 assert.equal(skillEntry.method, 'GET')
 const wrongVerb = fakeRes()
 await guardHandler(skillEntry, guardDeps)(
@@ -204,7 +227,7 @@ try {
     sendText: () => {},
     // real workspace/intake so the upsert really creates a folder
   })
-  const wsEntry = wsGroups[1].entries[0]
+  const wsEntry = entryFor(wsGroups, '/jobcv/workspace')
   assert.equal(wsEntry.path, '/jobcv/workspace')
   assert.equal(wsEntry.method, undefined, 'the workspace handler dispatches GET vs POST itself')
 
@@ -252,7 +275,7 @@ try {
     skillText: skill,
     sendText: () => {},
   })
-  const wsGetEntry = wsGetGroups[1].entries[0]
+  const wsGetEntry = entryFor(wsGetGroups, '/jobcv/workspace')
   // no workspace yet -> empty listing
   const wg0 = fakeRes()
   await wsGetEntry.handler({ method: 'GET', url: '/jobcv/workspace?session=other' }, wg0)
@@ -294,7 +317,7 @@ try {
     skillText: skill,
     sendText: () => {},
   })
-  const historyEntry = verGroups[2].entries[0]
+  const historyEntry = entryFor(verGroups, '/jobcv/history')
   assert.equal(historyEntry.path, '/jobcv/history')
   assert.equal(historyEntry.method, 'GET')
   // missing session
@@ -310,7 +333,7 @@ try {
     [4, 3, 2],
   )
 
-  const restoreEntry = verGroups[2].entries[1]
+  const restoreEntry = entryFor(verGroups, '/jobcv/restore')
   assert.equal(restoreEntry.path, '/jobcv/restore')
   assert.equal(restoreEntry.method, 'POST')
   // validation: missing session / bad version
@@ -334,7 +357,7 @@ try {
   assert.equal(r3.code, 404)
 
   // intake: rejects a missing or empty payload
-  const intakeEntry = wsGroups[1].entries[1]
+  const intakeEntry = entryFor(wsGroups, '/jobcv/intake')
   assert.equal(intakeEntry.path, '/jobcv/intake')
   const i1 = fakeRes()
   await intakeEntry.handler(fakeReq('POST', '/jobcv/intake', {}), i1)
