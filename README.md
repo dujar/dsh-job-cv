@@ -97,8 +97,15 @@ can never appear in the exported PDF.
 
 ### The candidacy folder
 
-One folder per application, upserted at
-`$DSH_JOB_CV_ROOT` (default `$DSH_HOME/dsh-job-cv/applications`)`/<company>/<job-id>/`:
+One folder per application, upserted at `<root>/<company>/<job-id>/`. The
+root is the **session's own working directory** — an application is work you
+keep, open, diff and back up, so it belongs in the project you started the
+session in rather than buried in `$DSH_HOME` beside the plugin's state.
+Resolution order:
+
+1. `$DSH_JOB_CV_ROOT` — an explicit choice always wins;
+2. the session's `cwd`;
+3. `$DSH_HOME/dsh-job-cv/applications` — only when the session has no cwd.
 
 ```
 acme-corp/3812345678/
