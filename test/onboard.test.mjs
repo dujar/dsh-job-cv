@@ -37,6 +37,20 @@ assert.ok(mod.__diagnostics.offlineReason(new Error('network')).includes('dsh we
 assert.ok(mod.__diagnostics.offlineReason(undefined).includes('dsh web'))
 
 // ---- buildStartMessage: the hand-off the agent receives ----
+// the session id has to travel with the brief: the agent cannot derive one
+const withSession = B.buildStartMessage(
+  'https://jobs.example.com/42',
+  '/tmp/cv.pdf',
+  'Acme',
+  null,
+  'session-343d8da6-3066-4cd7-b5b7-e12f2dabdd9a',
+)
+assert.ok(
+  withSession.includes('Session id: session-343d8da6-3066-4cd7-b5b7-e12f2dabdd9a'),
+  'the brief states the session id verbatim',
+)
+assert.ok(!B.buildStartMessage('u', 'p').includes('Session id:'), 'omitted when unknown')
+
 const msg = B.buildStartMessage('https://jobs.example.com/42', '/tmp/cv.pdf')
 assert.ok(msg.includes('Job post link: https://jobs.example.com/42'))
 assert.ok(msg.includes('My CV: /tmp/cv.pdf'))

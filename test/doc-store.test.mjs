@@ -14,6 +14,15 @@ try {
   assert.equal(sanitizeSessionId('abc-123_XYZ.42'), 'abc-123_XYZ.42')
   assert.equal(sanitizeSessionId('../../etc/passwd'), '.._.._etc_passwd')
   assert.equal(sanitizeSessionId(''), null)
+  // The browser and the agent spell the same session differently; both have
+  // to land on one document, or the preview watches a key nobody writes.
+  assert.equal(
+    sanitizeSessionId('session-343d8da6-3066-4cd7-b5b7-e12f2dabdd9a'),
+    sanitizeSessionId('343d8da6-3066-4cd7-b5b7-e12f2dabdd9a'),
+    'prefixed and bare ids address the same document',
+  )
+  assert.equal(sanitizeSessionId('session-abc'), 'abc')
+  assert.equal(sanitizeSessionId('session-'), null, 'a bare prefix is not an id')
   assert.equal(sanitizeSessionId(undefined), null)
 
   const store = createDocStore(dir)
