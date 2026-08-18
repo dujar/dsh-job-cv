@@ -1,0 +1,63 @@
+{
+  "name": "dsh-job-cv",
+  "description": "Job mode for the DeepSeek Harness web GUI: the chat moves to a sidebar and the main layout becomes a live HTML-to-PDF CV preview the agent updates — scoped to tailoring a CV against a provided job post link",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-slots"
+      ],
+      "platform": "web"
+    }
+  },
+  "files": [
+    "lib",
+    "cordis.patch.yml"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "cv",
+    "resume",
+    "job-mode",
+    "pdf"
+  ],
+  "license": "MIT",
+  "author": "bitslicer",
+  "engines": {
+    "node": ">=22.19"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-client-runtime": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-client-ui-slots": "^0.1.0-rc.6",
+    "react": "^18.2.0"
+  },
+  "scripts": {
+    "test": "npm run lint && npm run format:check && node scripts/build-client.js --check && for f in test/*.test.mjs; do node \"$f\" || exit 1; done",
+    "build:client": "node scripts/build-client.js",
+    "lint": "eslint .",
+    "format": "prettier --write 'lib/**/*.js' 'test/*.mjs' 'scripts/*.js' '*.md' '*.json' '!package-lock.json'",
+    "format:check": "prettier --check 'lib/**/*.js' 'test/*.mjs' 'scripts/*.js' '*.md' '*.json' '!package-lock.json'"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.5",
+    "prettier": "^3.9.6"
+  }
+}
