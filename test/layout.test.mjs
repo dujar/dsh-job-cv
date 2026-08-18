@@ -59,4 +59,15 @@ assert.equal(L.splitFits(640), false) // the shell's own floor for the column
 assert.equal(L.splitFits(0), false)
 assert.ok(L.SPLIT_MIN === L.CHAT_MIN + L.PREVIEW_MIN)
 
+// ---- the divider: a drag is a decision, clamped so neither side folds ----
+assert.equal(L.clampChatW(999, 1200), 1200 - L.MIN_PREVIEW_PX, 'the preview keeps its floor')
+assert.equal(L.clampChatW(0, 1200), L.CHAT_MIN, 'the chat never folds below CHAT_MIN')
+assert.equal(L.clampChatW(500, 1200), 500, 'a share inside the bounds stands as dragged')
+assert.equal(
+  L.clampChatW(700, 860),
+  860 - L.MIN_PREVIEW_PX,
+  'a tight column still leaves the preview readable',
+)
+assert.ok(L.SHEET_W > 790 && L.SHEET_W < 800, 'the sheet is 210mm plus its borders')
+
 console.log('  ok  layout: chat sidebar right, preview keeps ' + L.PREVIEW_MIN + 'px or the window')
