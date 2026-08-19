@@ -318,7 +318,11 @@ can never appear in the exported PDF.
    **History** on the preview toolbar lists every saved version, newest
    first, and restores any of them with one click — restoring is itself a
    save, so the old current version stays in history.
-6. **Export PDF** on the preview toolbar.
+6. **Export PDF** on the preview toolbar. The download is named
+   `Firstname_Lastname_CV_Job_Company.pdf` (and
+   `Firstname_Lastname_Cover_Letter_Job_Company.pdf` for the letter) — the
+   name comes from the document's own header, the job title and company
+   from the candidacy, and whatever is not known yet is left out.
 
 ## Development
 
