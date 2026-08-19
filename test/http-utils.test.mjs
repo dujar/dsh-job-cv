@@ -63,4 +63,15 @@ assert.deepEqual(await readJsonBody(feed([])), {})
 await assert.rejects(readJsonBody(feed(['{bad'])))
 await assert.rejects(readJsonBody(feed(['x'.repeat(300 * 1024)])), /body too large/)
 
+// EventSource cannot set request headers, so /jobcv/stream arrives with no
+// content-type at all — bare, plus whatever Referer the page carries. If the
+// gate ever stops trusting that shape, the preview silently falls back to
+// polling and nobody notices the push is gone.
+assert.equal(trusted({ host: '127.0.0.1:7788' }), true, 'a header-less loopback GET is trusted')
+assert.equal(
+  trusted({ host: '127.0.0.1:7788', referer: 'http://127.0.0.1:7788/' }),
+  true,
+  'the stream carries the page as its referer',
+)
+
 console.log('ok  http trust gate')

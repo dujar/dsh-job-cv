@@ -238,6 +238,36 @@ try {
   const leftovers = (await readdir(join(dir, 'sessions'))).filter((f) => f.includes('.tmp-'))
   assert.deepEqual(leftovers, [], 'temp files are renamed or cleaned up')
 
+  // ---- the push behind /jobcv/stream ----
+  // Every write fans out to whoever is watching that session, and only that
+  // session: a preview must not repaint because a different candidacy saved.
+  {
+    const seen = []
+    const other = []
+    const stop = store.subscribe('s1', () => seen.push('s1'))
+    store.subscribe('s2', () => other.push('s2'))
+    const before = seen.length
+    await store.save('s1', { html: '<html>watched</html>' })
+    assert.equal(seen.length, before + 1, 'a save pushes to the session it saved')
+    assert.equal(other.length, 0, 'and to no one else')
+    // Everything that changes what the projection says has to push, or the
+    // preview shows a document the store has already moved past.
+    await store.saveLetter('s1', { html: '<p>watched letter</p>' })
+    await store.setFit('s1', { score: 50, gaps: [] })
+    assert.equal(seen.length, before + 3, 'a letter and a score push too')
+    // A thrown subscriber is a broken stream, not a broken save.
+    store.subscribe('s1', () => {
+      throw new Error('this stream is gone')
+    })
+    const version = await store.save('s1', { html: '<html>survives</html>' })
+    assert.ok(version > 0, 'a subscriber that throws does not fail the save')
+    // Unsubscribing is what a closed stream does; it must actually stop.
+    stop()
+    const quiet = seen.length
+    await store.save('s1', { html: '<html>unwatched</html>' })
+    assert.equal(seen.length, quiet, 'an unsubscribed watcher hears nothing')
+  }
+
   console.log('ok  doc-store')
 } finally {
   await rm(dir, { recursive: true, force: true })
