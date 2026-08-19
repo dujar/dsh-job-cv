@@ -211,6 +211,10 @@ assert.ok(
   deckLight.includes('repeating-linear-gradient'),
   'the A4 boundary is drawn on the sheet itself — an overflow crosses it where the PDF would break',
 )
+assert.ok(
+  deckLight.includes('text-size-adjust:100%'),
+  'mobile font boosting is pinned off — it would re-wrap the CV and break the A4 agreement',
+)
 const deckDark = A.pageDeckCss(true, { dark: true })
 assert.ok(deckDark.includes('#26282b'), 'the desk follows the theme')
 const deckFlat = A.pageDeckCss(false, { dark: false })
@@ -219,6 +223,7 @@ assert.ok(
   'no .page divisions, a boundary line instead',
 )
 assert.ok(deckFlat.includes('297mm'), 'the fallback line lands on the A4 boundary')
+assert.ok(deckFlat.includes('text-size-adjust:100%'), 'the fallback deck pins the font size too')
 
 const one = A.buildRevisionMessage([{ ...note, comment: '' }], { version: 1 })
 assert.ok(one.includes('Revise one part of my CV (currently v1)'))
