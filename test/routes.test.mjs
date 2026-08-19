@@ -90,6 +90,7 @@ assert.deepEqual(paths, [...new Set(paths)], 'one registration per exact path')
 assert.deepEqual(paths.sort(), [
   '/jobcv/brief',
   '/jobcv/doc',
+  '/jobcv/file',
   '/jobcv/fit',
   '/jobcv/history',
   '/jobcv/intake',
@@ -260,7 +261,7 @@ await guardHandler(skillEntry, guardDeps)(
 assert.equal(wrongVerb.code, 405)
 
 // ---- the candidacy + intake routes ----
-import { mkdtemp, mkdir, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join as pathJoin } from 'node:path'
 const wsRoot = await mkdtemp(pathJoin(tmpdir(), 'jobcv-routes-'))
@@ -351,6 +352,67 @@ try {
   const wg405 = fakeRes()
   await wsGetEntry.handler({ method: 'DELETE', url: '/jobcv/workspace?session=s1' }, wg405)
   assert.equal(wg405.code, 405)
+
+  // ---- the file route: opens one candidacy file in its own tab ----
+  function fileRes() {
+    return {
+      code: 0,
+      headers: null,
+      body: null,
+      writeHead(c, h) {
+        this.code = c
+        this.headers = h
+      },
+      end(b) {
+        this.body = b
+      },
+    }
+  }
+  const fileGroups = defineJobCvRoutes({
+    store: wsGetStore,
+    resolveRoot: () => pathJoin(wsRoot, 'apps'),
+    intakeRoot: pathJoin(wsRoot, 'intake'),
+    skillText: skill,
+    sendText: () => {},
+  })
+  const fileEntry = entryFor(fileGroups, '/jobcv/file')
+  assert.equal(fileEntry.path, '/jobcv/file')
+  assert.equal(fileEntry.method, 'GET')
+
+  // missing session / missing name
+  const f0 = fileRes()
+  await fileEntry.handler({ method: 'GET', url: '/jobcv/file' }, f0)
+  assert.equal(f0.code, 400)
+  const f1 = fileRes()
+  await fileEntry.handler({ method: 'GET', url: '/jobcv/file?session=s1' }, f1)
+  assert.equal(f1.code, 400)
+
+  // happy path: the breadcrumb is served as text/plain
+  const f2 = fileRes()
+  await fileEntry.handler({ method: 'GET', url: '/jobcv/file?session=s1&name=README.md' }, f2)
+  assert.equal(f2.code, 200)
+  assert.ok(f2.headers['content-type'].indexOf('text/plain') === 0)
+  assert.ok(String(f2.body).includes('Created by the dsh-job-cv plugin'))
+
+  // an HTML file is served with a sandbox so agent HTML never runs in the
+  // harness origin
+  const cvDir = pathJoin(wsRoot, 'apps', 'acme-corp', '42', 'cv')
+  await mkdir(cvDir, { recursive: true })
+  await writeFile(pathJoin(cvDir, 'latest.html'), '<script>alert(1)</script>')
+  const f3 = fileRes()
+  await fileEntry.handler({ method: 'GET', url: '/jobcv/file?session=s1&name=cv/latest.html' }, f3)
+  assert.equal(f3.code, 200)
+  assert.ok(f3.headers['content-type'].indexOf('text/html') === 0)
+  assert.equal(f3.headers['content-security-policy'], 'sandbox')
+  assert.equal(String(f3.body), '<script>alert(1)</script>')
+
+  // path traversal reads as not found, never as a file read
+  const f4 = fileRes()
+  await fileEntry.handler(
+    { method: 'GET', url: '/jobcv/file?session=s1&name=../../etc/passwd' },
+    f4,
+  )
+  assert.equal(f4.code, 404)
 
   // ---- the version history + restore routes ----
   const verGroups = defineJobCvRoutes({
