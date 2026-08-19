@@ -91,6 +91,14 @@ they provide together with their current CV.
   remains (down to a 240px floor), double-clicking it returns to the computed
   split, and the chosen share persists per session.
 
+  On a touch device, a horizontal swipe across the sheet moves between the
+  CV, cover letter and Post tabs. The sandboxed iframe swallows the gesture,
+  so it is detected inside the document and forwarded to the pane, and a
+  vertical scroll never reads as a switch (the drag must be clearly
+  horizontal). A one-time **‹ swipe to switch ›** hint sits under the tab
+  switcher until the first switch, and only when the pointer is coarse — it
+  is a hint for fingers, not mice.
+
 ### The cover letter
 
 **+ Cover letter** in the toolbar asks the agent for a one-page letter to go
