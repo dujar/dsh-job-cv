@@ -58,6 +58,7 @@ export default [
         location: 'readonly',
         localStorage: 'readonly',
         fetch: 'readonly',
+        EventSource: 'readonly',
         FileReader: 'readonly',
         setInterval: 'readonly',
         clearInterval: 'readonly',

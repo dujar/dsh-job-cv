@@ -100,6 +100,7 @@ assert.deepEqual(paths.sort(), [
   '/jobcv/proposal/decision',
   '/jobcv/restore',
   '/jobcv/skill',
+  '/jobcv/stream',
   '/jobcv/workspace',
 ])
 
@@ -529,8 +530,6 @@ await guardHandler(
 assert.equal(boom.code, 500)
 assert.equal(boom.body.error, 'kaboom')
 
-console.log('ok  routes + skill contract')
-
 // ---- the job post is stored, mirrored and readable ----
 import { createDocStore } from '../lib/store/doc-store.js'
 // The post is what every other file in the candidacy folder is an answer to,
@@ -691,3 +690,81 @@ import { createDocStore } from '../lib/store/doc-store.js'
 
   await rm(home, { recursive: true, force: true })
 }
+
+// ---- GET /jobcv/stream: the push that replaced the poll ----
+// The pane holds this open for the whole session, so what matters is that it
+// frames the projection, pushes on every change, and lets go on close: a
+// stream that leaks its subscription keeps a dead session's writes alive.
+{
+  const pushes = []
+  let subscriber = null
+  let unsubscribed = 0
+  const streamStore = {
+    get: async () => ({ version: pushes.length + 1 }),
+    subscribe(sessionId, fn) {
+      assert.equal(sessionId, 's1', 'the stream subscribes to the session it was asked for')
+      subscriber = fn
+      return function () {
+        unsubscribed += 1
+        subscriber = null
+      }
+    },
+  }
+  const streamEntry = entryFor(
+    defineJobCvRoutes({ store: streamStore, skillText: skill, sendText: () => {} }),
+    '/jobcv/stream',
+  )
+
+  const res = new EventEmitter()
+  res.headers = null
+  res.ended = false
+  res.writeHead = function (code, headers) {
+    this.code = code
+    this.headers = headers
+  }
+  res.write = function (chunk) {
+    pushes.push(chunk)
+  }
+  res.end = function () {
+    this.ended = true
+  }
+  const req = new EventEmitter()
+  req.method = 'GET'
+  req.url = '/jobcv/stream?session=s1'
+
+  await streamEntry.handler(req, res)
+  assert.equal(res.code, 200)
+  assert.equal(res.headers['content-type'], 'text/event-stream')
+  assert.equal(res.headers['cache-control'], 'no-cache, no-transform')
+  // The first frame is unconditional: a pane that connects mid-session must
+  // not wait for the next save to learn what the document is.
+  await new Promise((r) => setTimeout(r, 0))
+  assert.equal(pushes.length, 1, 'connecting pushes the current document')
+  assert.match(pushes[0], /^data: \{.*\}\n\n$/, 'one SSE data frame, terminated')
+  assert.equal(JSON.parse(pushes[0].slice(6)).version, 1)
+  assert.ok(subscriber, 'and it is now watching the session')
+
+  // A save reaches the open stream.
+  subscriber()
+  await new Promise((r) => setTimeout(r, 0))
+  assert.equal(pushes.length, 2, 'a change pushes a frame')
+  assert.equal(JSON.parse(pushes[1].slice(6)).version, 2)
+
+  // The pane goes away: the subscription goes with it, and a late push after
+  // the close writes nothing into a socket that is gone.
+  const dead = subscriber
+  res.emit('close')
+  assert.equal(unsubscribed, 1, 'closing unsubscribes')
+  assert.ok(res.ended, 'and ends the response')
+  dead()
+  await new Promise((r) => setTimeout(r, 0))
+  assert.equal(pushes.length, 2, 'a push after the close writes nothing')
+  res.emit('close')
+  assert.equal(unsubscribed, 1, 'and a second close is not a second unsubscribe')
+
+  const noSession = fakeRes()
+  await streamEntry.handler({ method: 'GET', url: '/jobcv/stream' }, noSession)
+  assert.equal(noSession.code, 400, 'a stream needs a session to stream')
+}
+
+console.log('ok  routes + skill contract')

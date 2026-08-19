@@ -15,6 +15,9 @@ they provide together with their current CV.
   `$DSH_HOME/.agent-presets/job` and the `/job` skill bridge, and serves
   the `/jobcv/*` surface:
   - `GET /jobcv/doc?session=<id>` — the session's current document
+  - `GET /jobcv/stream?session=<id>` — the same projection as a
+    server-sent stream: a save pushes, so the preview does not wait
+    for a poll
   - `POST /jobcv/doc` — replace the whole document, bump the version
   - `GET /jobcv/workspace?session=<id>` — the candidacy folder path and
     the files in it (shown in the dock)
@@ -56,9 +59,15 @@ they provide together with their current CV.
   details panel, so a wide window can still leave a column too narrow to
   divide. Dragging either panel re-decides the shape live.
 
-  The pane polls the document every 2.5s, so every agent save appears
-  live and is announced ("v4 · just updated"); a host that stops
-  answering is reported rather than silently freezing the preview.
+  The document is **pushed**: the pane holds a server-sent stream
+  (`GET /jobcv/stream`) and a save writes one frame to it, so every agent
+  save appears live and is announced ("v4 · just updated"). A 2.5s poll
+  runs underneath as the fallback — it starts with the pane, stops at the
+  first frame that proves the stream works, and comes back whenever the
+  stream drops. An `EventSource` failure carries no status, and only the
+  poll can tell a host that has gone away from the 403 the trust gate
+  returns on a LAN address, so a host that stops answering is reported
+  rather than silently freezing the preview.
 
   The document renders as paper, not as a scroll: each `<div class="page">`
   division the agent writes is drawn as a separate A4 sheet on a desk, with
@@ -127,8 +136,8 @@ JavaScript and `curl` comes back with an empty shell, which the contract
 already warns the agent about; pasting is the way out, and pasted text is
 authoritative over whatever the scrape managed to get.
 
-The body is fetched only when the tab wants it — `/jobcv/doc` is polled every
-2.5s and carries a marker (`postChars`, `postUpdatedAt`), never thousands of
+The body is fetched only when the tab wants it — the `/jobcv/doc` projection
+carries a marker (`postChars`, `postUpdatedAt`), never thousands of
 characters of posting.
 
 What leads the tab is not the dump but the posting **as a page**: a styled
