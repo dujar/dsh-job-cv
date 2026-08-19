@@ -434,4 +434,36 @@ const postWorking = render(UI.PostSurface, {
 })
 assert.ok(postWorking.includes('Working on the posting…'), 'the post tab carries the loading')
 
+// ---- the swipe hint: touch devices only, and only while it is still new ----
+assert.ok(!paneOut.includes('swipe to switch'), 'without a coarse pointer the hint stays hidden')
+globalThis.window.matchMedia = (q) => ({ matches: q.indexOf('coarse') !== -1 })
+const touchPane = render(UI.CvPane, {
+  pal,
+  doc: {
+    version: 4,
+    html: '<html><body><p>CV</p></body></html>',
+    jobUrl: '',
+    updatedAt: 1,
+    letter: { version: 2, html: '<html><body><p>Dear</p></body></html>' },
+    postChars: 900,
+    postUpdatedAt: 5,
+  },
+  online: true,
+  flash: false,
+  working: false,
+  draft: '',
+  sessionId: 's1',
+  inputActions: {},
+  canFullScreen: false,
+  fullScreen: false,
+  onToggleFullScreen: () => {},
+  onClose: () => {},
+  onWorkStarted: () => {},
+})
+globalThis.window.matchMedia = undefined
+assert.ok(
+  touchPane.includes('swipe to switch'),
+  'a touch device with several views shows the swipe affordance',
+)
+
 console.log('ok  preview renders: fit panel, post surface, both timelines')
