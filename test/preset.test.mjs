@@ -73,7 +73,7 @@ for (const rule of [
   'matches the CV',
   'no text boxes',
   'Strictly one page',
-  'Firstname_Lastname_Cover_Letter.pdf',
+  'Firstname_Lastname_Cover_Letter_Job_Company.pdf',
 ]) {
   assert.ok(PRESET_COMPOSITION.includes(rule), 'cover letter layout rule kept: ' + rule)
 }
