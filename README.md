@@ -20,6 +20,8 @@ they provide together with their current CV.
     the files in it (shown in the dock)
   - `POST /jobcv/workspace` — upsert the candidacy folder
     `<root>/<company>/<job-id>/` and record it on the session
+  - `GET /jobcv/file?session=<id>&name=<path>` — serve one candidacy file
+    (the dock's chips preview it on hover; `Open ↗` opens it in a new tab)
   - `POST /jobcv/intake` — stage a CV file dropped in the browser, return
     its path
   - `GET /jobcv/post?session=<id>` — the job post text (falls back to
@@ -74,6 +76,15 @@ they provide together with their current CV.
   page box (border-box, 210mm of paper including padding, no margins), and
   the A4 boundary is drawn on the sheet itself: content that would spill onto
   a second printed page crosses the line in the preview at exactly that spot.
+
+  The document is agent-authored, so the deck also defends: `<script>`
+  elements are stripped (the sandbox blocks them and logs an error), an
+  embedded external page becomes a link (LinkedIn and most boards refuse to
+  be framed and the blocked frame renders as a broken box), and `<a href>`
+  links open in a new tab from the parent — same-frame navigation would
+  replace the preview with the linked page, and `target="_blank"` inside the
+  sandbox is blocked. The exported PDF keeps the anchors as-is, and they stay
+  clickable there.
 
   The boundary between the preview and the chat is a **draggable divider**:
   pulling it wider gives the chat more room and the sheet scales to what
@@ -292,7 +303,9 @@ can never appear in the exported PDF.
    would otherwise pick.
 4. The dock shows the workspace folder (labeled with company — job title
    when known) and the files the agent has saved into it, refreshed with
-   the same poll as the preview.
+   the same poll as the preview. Hovering a file chip previews its content
+   (HTML renders sandboxed, text and images render inline); `Open ↗` inside
+   the preview opens the full file in a new tab.
 5. Iterate by chatting ("make the summary sharper", "cut to one page").
    **History** on the preview toolbar lists every saved version, newest
    first, and restores any of them with one click — restoring is itself a
