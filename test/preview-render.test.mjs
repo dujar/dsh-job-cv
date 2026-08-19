@@ -28,6 +28,9 @@ const stubReact = {
 let spec = null
 globalThis.window = { __ModuleLoader__: { load: (s) => (spec = s) } }
 globalThis.document = { body: null, getElementById: () => null, createElement: () => ({}) }
+// CvPane reads the per-session prefs on render; give it an empty store so the
+// test stays hermetic instead of tripping node's experimental localStorage.
+globalThis.localStorage = { getItem: () => null, setItem: () => {} }
 new Function(readFileSync(new URL('../lib/client.js', import.meta.url), 'utf8'))()
 const mod = spec.factory((n) => (n === 'react' ? stubReact : { createPortal: (c) => c }))
 const UI = mod.__ui
