@@ -225,6 +225,59 @@ assert.ok(
 assert.ok(deckFlat.includes('297mm'), 'the fallback line lands on the A4 boundary')
 assert.ok(deckFlat.includes('text-size-adjust:100%'), 'the fallback deck pins the font size too')
 
+// ---- the swipe gesture: detected inside the iframe, forwarded once ----
+function swipeDoc() {
+  const attrs = {}
+  const listeners = {}
+  return {
+    body: {
+      hasAttribute: (k) => attrs[k] === '',
+      setAttribute: (k, v) => (attrs[k] = v),
+    },
+    addEventListener: (type, fn) => {
+      ;(listeners[type] = listeners[type] || []).push(fn)
+    },
+    __listeners: listeners,
+  }
+}
+const swipes = []
+A.setSwipeHandler((dir) => swipes.push(dir))
+const swipe = swipeDoc()
+A.attachSwipe(swipe)
+const start = swipe.__listeners.touchstart[0]
+const end = swipe.__listeners.touchend[0]
+
+start({ touches: [{ clientX: 0, clientY: 0 }] })
+end({ changedTouches: [{ clientX: 100, clientY: 0 }] })
+assert.deepEqual(swipes, [-1], 'a clear swipe right moves to the previous view')
+swipes.length = 0
+start({ touches: [{ clientX: 200, clientY: 0 }] })
+end({ changedTouches: [{ clientX: 100, clientY: 0 }] })
+assert.deepEqual(swipes, [1], 'a swipe left moves to the next view')
+swipes.length = 0
+start({ touches: [{ clientX: 0, clientY: 0 }] })
+end({ changedTouches: [{ clientX: 0, clientY: 100 }] })
+assert.deepEqual(swipes, [], 'a vertical scroll never reads as a switch')
+swipes.length = 0
+start({ touches: [{ clientX: 0, clientY: 0 }] })
+end({ changedTouches: [{ clientX: 40, clientY: 0 }] })
+assert.deepEqual(swipes, [], 'a nudge under the 60px threshold is not a swipe')
+swipes.length = 0
+start({ touches: [{ clientX: 0, clientY: 0 }] })
+end({ changedTouches: [{ clientX: 100, clientY: 80 }] })
+assert.deepEqual(swipes, [], 'a mostly-vertical drag stays a scroll')
+
+// one listener per document, and no handler means no forwarding
+const second = swipeDoc()
+A.attachSwipe(second)
+A.attachSwipe(second)
+assert.equal(second.__listeners.touchstart.length, 1, 'the listener attaches once per document')
+A.setSwipeHandler(null)
+swipes.length = 0
+start({ touches: [{ clientX: 0, clientY: 0 }] })
+end({ changedTouches: [{ clientX: 100, clientY: 0 }] })
+assert.deepEqual(swipes, [], 'with no handler a swipe is dropped, not thrown')
+
 const one = A.buildRevisionMessage([{ ...note, comment: '' }], { version: 1 })
 assert.ok(one.includes('Revise one part of my CV (currently v1)'))
 assert.ok(one.includes('What is needed: improve this'), 'an empty comment still says something')
