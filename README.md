@@ -24,7 +24,8 @@ they provide together with their current CV.
   - `POST /jobcv/workspace` — upsert the candidacy folder
     `<root>/<company>/<job-id>/` and record it on the session
   - `GET /jobcv/file?session=<id>&name=<path>` — serve one candidacy file
-    (the dock's chips preview it on hover; `Open ↗` opens it in a new tab)
+    (the dock's chips preview it on hover — or on tap, on a touch device —
+    and `Open ↗` opens it in a new tab)
   - `POST /jobcv/intake` — stage a CV file dropped in the browser, return
     its path
   - `GET /jobcv/post?session=<id>` — the job post text (falls back to
@@ -202,6 +203,14 @@ score's gaps are the same judgement: the agent builds them together and moves
 both when it re-scores. The preview owns the red convention (injected into the
 iframe by the parent), so the marks cannot be restyled out of existence by an
 agent stylesheet.
+
+What is missing is one **tap** away on a phone: the explanation lives in the
+mark's `title`, and a title is a hover tooltip — with no hover, the red marks
+were the whole message. Tapping a mark (or clicking it) opens a small dark
+callout rendered from that very attribute, one at a time; tapping again,
+tapping anywhere else, or scrolling closes it, and a drag stays a scroll. The
+callout is `@media screen`-only, so it can never print. Edit mode stands it
+down — a callout under a caret being placed is noise.
 
 The brief remains for what a page cannot show — the practical facts as a
 strip: location and remote policy, salary range if stated, when it was
