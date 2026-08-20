@@ -354,6 +354,50 @@ assert.ok(paneOut.includes('Post'), 'and the post has a tab of its own')
 assert.ok(paneOut.includes('Letter v2'))
 assert.ok(paneOut.includes('History'))
 assert.ok(paneOut.includes('Export PDF'))
+// The one action that does not go through the agent.
+assert.ok(paneOut.includes('Edit'), 'a live document can be changed by hand')
+assert.equal(hookDepth, 0)
+
+// ---- the edit bar: what is being edited, and where it will land ----
+const editBar = render(UI.EditBar, {
+  pal,
+  what: 'CV',
+  nextVersion: 5,
+  note: '',
+  onNote: () => {},
+  busy: false,
+  dirty: true,
+  error: null,
+  movedUnderneath: false,
+  onSave: () => {},
+  onDiscard: () => {},
+})
+assert.ok(editBar.includes('Editing the CV'), 'the bar names the document it is about')
+assert.ok(editBar.includes('Saving lands as v5.'), 'and the version the save becomes')
+assert.ok(editBar.includes('Save changes'))
+assert.ok(editBar.includes('Discard'))
+
+// The post has no version line, so the bar promises no version.
+const postEditBar = render(UI.EditBar, {
+  pal,
+  what: 'job post page',
+  nextVersion: null,
+  note: '',
+  onNote: () => {},
+  busy: false,
+  dirty: false,
+  error: 'the host answered 400',
+  movedUnderneath: true,
+  onSave: () => {},
+  onDiscard: () => {},
+})
+assert.ok(postEditBar.includes('Saving replaces the stored page.'))
+assert.ok(!postEditBar.includes('lands as v'), 'the post is not versioned')
+assert.ok(
+  postEditBar.includes('The agent saved while you were editing'),
+  'a save landing underneath is said out loud, not silently overwritten',
+)
+assert.ok(postEditBar.includes('the host answered 400'), 'a refused save says why')
 assert.equal(hookDepth, 0)
 
 // ---- the loading lives only on the surface that was asked for ----
@@ -398,6 +442,37 @@ const paneLetter = render(UI.CvPane, {
 })
 // On the CV tab a letter request is invisible: nothing here is the letter.
 assert.ok(!paneLetter.includes('Working on the cover letter'), 'the CV tab stays clear')
+
+// ---- a letter being asked for has a surface of its own ----
+// No letter exists yet: the request earns a tab (with working dots, not a
+// version), the trigger becomes a disabled status so it cannot be fired
+// twice, and the CV tab stays clear of the letter's loading.
+const paneLetterPending = render(UI.CvPane, {
+  pal,
+  doc: { version: 4, html: '<p>cv</p>', jobUrl: '', updatedAt: 1 },
+  online: true,
+  flash: false,
+  working: { target: 'letter', version: 4, letterVersion: 0, anchors: [] },
+  draft: '',
+  sessionId: 's1',
+  inputActions: {},
+  canFullScreen: true,
+  fullScreen: false,
+  onToggleFullScreen: () => {},
+  onClose: () => {},
+  onWorkStarted: () => {},
+})
+assert.ok(paneLetterPending.includes('Letter'), 'the pending letter earns a tab before it exists')
+assert.ok(!paneLetterPending.includes('Letter v'), 'an unwritten letter has no version to show')
+assert.ok(
+  paneLetterPending.includes('Writing cover letter'),
+  'the trigger becomes a writing status while the request is in flight',
+)
+assert.ok(!paneLetterPending.includes('+ Cover letter'), 'the request cannot be fired twice')
+assert.ok(
+  !paneLetterPending.includes('Writing the cover letter…'),
+  'on the CV tab the letter loading stays on the letter surface',
+)
 const panePost = render(UI.CvPane, {
   pal,
   doc: {

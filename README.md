@@ -111,7 +111,11 @@ they provide together with their current CV.
 ### The cover letter
 
 **+ Cover letter** in the toolbar asks the agent for a one-page letter to go
-with the CV; once one exists the toolbar becomes a **CV / Letter** toggle and
+with the CV. The preview switches to the letter's own surface immediately —
+a shimmering skeleton sheet under the working badge — and the button becomes
+a disabled writing status, so the request cannot be fired twice. When the
+letter lands, the finished sheet rises into place (and the Letter tab
+pulses). Once one exists the toolbar becomes a **CV / Letter** toggle and
 Export PDF prints whichever is shown. The letter is a second document, not a
 section of the CV: its own version line (`POST /jobcv/letter`), its own
 `letter/` folder beside `cv/`. Revising a paragraph of the letter should not
@@ -278,16 +282,20 @@ While the agent works, three dots swell in sequence — and the loading lives
 **only on the surface that was asked for**. A comment batch dims exactly the
 marked parts, in two phases: the moment a part is added to the batch it dims
 and pulses (queued), and once the batch is on its way to the agent the same
-treatment rides the anchor paths. A cover-letter request shows on the letter
-tab and never dims the CV, a post request shows a strip on the Post tab, a
-fit request shows in the dock alone. A request committed to the composer
-counts — sent, or queued below your own draft — and the state stays visible
-for at least three seconds even when a fast agent saves within one poll, so
-it can never blink away unread. The working state ends the moment the thing that was asked for lands —
-a CV save ends a CV request, a letter save ends a letter request, new post
-text ends a post request — and a save landing while something else is in
-flight does not clear the wrong thing. It also gives up after six minutes, so
-a turn that answers without saving cannot leave it showing forever.
+treatment rides the anchor paths. A cover-letter request shows on the
+letter's own surface — a skeleton sheet while no letter exists yet, the
+dimmed document once it does — and never dims the CV, a post request shows a
+strip on the Post tab, a fit request shows in the dock alone. A request
+committed to the composer counts — sent, or queued below your own draft —
+and the state stays visible for at least three seconds even when a fast
+agent answers at once, so it can never blink away unread; its own timer
+then re-checks the landing, because a landed save may never be followed by
+another frame to re-run the check. The working state ends the moment the
+thing that was asked for lands — a CV save ends a CV request, a letter save
+ends a letter request, new post text ends a post request — and a save
+landing while something else is in flight does not clear the wrong thing.
+It also gives up after six minutes, so a turn that answers without saving
+cannot leave it showing forever.
 
 The message names the document, the section, a CSS-ish path and the exact
 current text for every note, and closes by asking the agent to save the
@@ -300,6 +308,51 @@ The preview iframe never gets `allow-scripts` — picking works because the
 frame is same-origin, so the _parent_ attaches the listeners and paints
 the highlights. Highlight CSS is injected under `@media screen`, so it
 can never appear in the exported PDF.
+
+### Editing it yourself
+
+Everything above routes through the agent, which is right for judgement — does
+this bullet land, is this claim supported — and wrong for a typo, a date, a
+place name, or a sentence you already know how to phrase. Asking a model to fix
+_Singapor_ costs a full turn and a whole-document rewrite.
+
+So **Edit** in the toolbar makes the document editable where it is. The sheet
+does not become a form or a text box: you click into the page and type, the
+block under the cursor tints to say it is yours to change, and the CV still
+looks like the CV. It works the same way commenting does — the preview iframe
+runs no scripts, but it _is_ same-origin, so the parent flips its body to
+`contentEditable` and reads the result back out.
+
+A hand edit is a save like any other. It goes through the same route the agent
+writes to, so it takes the next number on the same version line and lands in
+the same timeline — under `Edited by hand`, or under the one-line note you type
+in the edit bar ("Fixed the start date"). Nothing is special-cased: History
+lists it, and a rollback rolls it back.
+
+Each tab edits its own thing. The CV bumps the CV, the cover letter bumps the
+letter, and the Post tab edits the styled **page** — leaving the stored post
+text exactly as it was fetched, because editing a page is not a claim about
+what the posting said. A posting with no page yet is only text, and Edit opens
+the text editor that was already there. Re-storing the same words no longer
+ages the posting either, so attaching a page never marks the breakdown stale
+for a post that has not changed a character.
+
+The document is **frozen** while you edit it: the frame renders from the
+snapshot the edit started on, so an agent save landing mid-sentence cannot swap
+the page out from under the caret. It says so instead — _the agent saved while
+you were editing_ — and your save still lands, on top of that version. For the
+same reason Close and Full screen stand down while editing (both would tear the
+pane down and take the unsaved words with it), and switching tabs with unsaved
+changes is refused rather than silently dropped: **Save changes** and
+**Discard** are the two ways out, and Discard reloads the saved document.
+
+What gets saved is the author's document, not the preview's furniture. The page
+deck, the comment highlights, the red gap marks, the edit affordance, the
+viewport the deck declared, the `contentEditable` flag itself — all of it is
+stripped from a _clone_ on the way out, so a failed save leaves you still
+editing what you wrote. Two of the deck's defenses do become permanent, which is
+what they should have been: `<script>` elements stay removed, and an embedded
+external page stays a link to it.
 
 ## Workflow
 
