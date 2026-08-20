@@ -5,6 +5,7 @@
 026-cv-review.js
 027-cv-fit.js
 028-cv-onboard.js
+029-doc-edit.js
 030-cv-preview.js
 040-job-layout.js
 050-job-dock.js

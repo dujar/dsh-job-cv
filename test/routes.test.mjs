@@ -616,6 +616,48 @@ import { createDocStore } from '../lib/store/doc-store.js'
     'and the candidacy folder holds the same page the preview shows',
   )
 
+  // ---- re-storing the same words does not age the posting ----
+  // updatedAt is about the TEXT: the brief and the fit score are written
+  // against it, and a page-only save (the agent attaching a page it just
+  // built, or a hand edit of that page) must not mark them stale for a
+  // posting that has not changed a character.
+  const beforeEdit = await store.getPost('s1')
+  const editedPage = '<html><body><p>Edited by hand</p></body></html>'
+  const edited = fakeRes()
+  await post.handler(
+    fakeReq('POST', '/jobcv/post', {
+      sessionId: 's1',
+      text: 'We are hiring.',
+      html: editedPage,
+    }),
+    edited,
+  )
+  assert.equal(edited.code, 200)
+  const afterEdit = await store.getPost('s1')
+  assert.equal(
+    afterEdit.updatedAt,
+    beforeEdit.updatedAt,
+    'the text did not move, so nor did its clock',
+  )
+  assert.equal(afterEdit.html, editedPage, 'but the page it renders did')
+  assert.ok(afterEdit.htmlUpdatedAt >= beforeEdit.htmlUpdatedAt, 'the page has its own clock')
+
+  const reworded = fakeRes()
+  await post.handler(
+    fakeReq('POST', '/jobcv/post', { sessionId: 's1', text: 'We are hiring, urgently.' }),
+    reworded,
+  )
+  const afterReword = await store.getPost('s1')
+  assert.ok(
+    afterReword.updatedAt > beforeEdit.updatedAt,
+    'different words ARE a new posting, and everything written against it is now stale',
+  )
+  // Put the posting back as the rest of this file found it.
+  await post.handler(
+    fakeReq('POST', '/jobcv/post', { sessionId: 's1', text: 'We are hiring.', html: page }),
+    fakeRes(),
+  )
+
   // ---- the fit rides in the document payload, so the poll picks it up ----
   await store.save('s1', { html: '<html>v1</html>' })
   const scored = fakeRes()
