@@ -78,6 +78,49 @@ they provide together with their current CV.
   styling is injected by the parent under `@media screen`, so it never affects
   the printed PDF.
 
+  **Nothing blank prints.** Two different things put a blank sheet in the
+  exported PDF, and only one of them is visible in the preview. An empty
+  `<div class="page">` draws a full A4 sheet on the desk, so you can see it —
+  but a stray `<br>` or an empty spacer div sitting _between_ or _after_ the
+  sheets draws nothing at all against the desk background, and print has no
+  desk: it still takes up space, and one line of it is enough to push a whole
+  blank page into the PDF. That is how the preview can show the right number
+  of pages and the export still come out one too long.
+
+  So the deck marks both, on the same test, and hides them in _every_ medium
+  rather than only on screen — a sheet the preview drops has to be a page the
+  PDF does not print, or the two are disagreeing again, which is the one thing
+  this deck exists to prevent. What counts as content errs hard toward keeping
+  the page: words, an image, a rule, a table, a signature, even a decorative
+  background all hold one open, and an element that _is_ the thing that draws
+  (a stray `<img>` beside the sheets) counts as much as one containing it. A
+  false blank would delete part of the document; a false keep is only the
+  status quo. A blank page comes _back_ while you are editing, dashed, since
+  that is exactly where someone would want to fill one in. A trailing sheet
+  carrying overflowed text is untouched: it has real content on it — see
+  below.
+
+  **A sheet that does not fit is named, not hidden.** The other way a PDF goes
+  wrong is a `.page` taller than the paper: it does not just lose its own
+  tail, it pushes everything after it down, so the next sheet starts partway
+  into a printed page and the last millimetres land on a page of their own.
+  One page 17mm too long is what turns a two-page CV into a three-page PDF
+  with a list broken across the break — and the preview cannot show it,
+  because on screen a sheet simply grows.
+
+  So the preview measures. Every `.page` is compared against a real 297mm
+  probe (not a hand-computed 96dpi figure, which is how rounding becomes a
+  false warning on every page), the offending sheet's A4 boundary turns red,
+  and a strip says which page and by how many millimetres — with **Make it
+  fit**, which asks the agent to move the overflow, naming the page and the
+  number. It is told what not to do about it: not shrink the type, not cut the
+  evidence.
+
+  And every `.page` after the first now starts on **fresh paper** in print. A
+  `.page` division means a sheet, so one over-long page costs its own extra
+  sheet instead of shifting every page below it out of register for the rest
+  of the document — which is what "it broke my formatting" looks like.
+
   The preview is TRUE A4: the document lays out at 210mm — the width the PDF
   prints at — and when the pane is narrower than a full sheet, the whole
   sheet SCALES down as one (transform, never reflow), so a preview page and a
@@ -303,6 +346,20 @@ revision _and_ answer with judgement: whether each edit really strengthens
 the CV for this job post, and which requests would overstate what the CV
 supports.
 `GET /jobcv/skill` documents that format on the agent side.
+
+On a phone it is **tap to mark**. The picking was mouse-only to begin with —
+`mousedown`, `mousemove`, `mouseup` — and a phone does not reliably make those
+out of a tap: iOS Safari synthesizes them for elements it considers clickable
+and not for a paragraph inside a frame, so tapping a line of the CV did nothing
+at all and there was no way to comment from a phone. Touch is handled directly
+now, the same lesson the swipe gesture already learned about this iframe. One
+tap marks one part and the tap is cancelled so the mouse path cannot mark it
+twice; dragging a _range_ stays a mouse affordance, because on a phone a drag
+is how you scroll and taking that away would trap the reader on the first
+screen of their own CV. Several parts are still one batch — tap, write, Add,
+tap the next — and the panel says so in those words when the pointer is coarse.
+While comment mode (or edit mode) is on, the swipe-to-switch gesture stands
+down: switching tabs mid-comment drops the notes marked on that document.
 
 The preview iframe never gets `allow-scripts` — picking works because the
 frame is same-origin, so the _parent_ attaches the listeners and paints
