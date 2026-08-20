@@ -146,6 +146,118 @@ assert.ok(
   F.POST_GAP_CSS.includes('blocker') && F.POST_GAP_CSS.includes('minor'),
   'the red convention expresses every severity',
 )
+
+// The marks' explanation is a title tooltip, and a phone has no hover — so a
+// tap (or a click) opens a callout rendered from the title attribute itself.
+assert.ok(
+  F.GAP_OPEN_CSS.includes('content:attr(title)'),
+  "the callout IS the mark's own explanation, not a duplicate",
+)
+assert.ok(F.GAP_OPEN_CSS.startsWith('@media screen{'), 'and is screen-only: it never prints')
+assert.ok(F.GAP_OPEN_CSS.trim().endsWith('}'))
+assert.ok(F.GAP_OPEN_CSS.includes('pointer-events:none'), 'it cannot eat the next tap')
+
+// ---- attachGapTaps, on a fake document ----
+function gapDoc() {
+  const listeners = {}
+  const classes = new Set()
+  const mark = {
+    id: 'm1',
+    closest: (sel) => (sel === '.dsh-gap' ? mark : null),
+    classList: {
+      add: (c) => classes.add(c),
+      remove: (c) => classes.delete(c),
+      contains: (c) => classes.has(c),
+    },
+    __open: () => classes.has('dsh-gap-open'),
+  }
+  const other = {
+    id: 'other',
+    closest: () => null,
+    classList: { add: () => {}, remove: () => {}, contains: () => false },
+    __open: () => false,
+  }
+  const attrs = {}
+  const styles = {}
+  return {
+    body: {
+      hasAttribute: (k) => attrs[k] === '',
+      setAttribute: (k, v) => (attrs[k] = v),
+    },
+    addEventListener: (t, fn) => (listeners[t] = listeners[t] || []).push(fn),
+    removeEventListener: (t, fn) => {
+      listeners[t] = (listeners[t] || []).filter((f) => f !== fn)
+    },
+    querySelectorAll: () => [],
+    getElementById: (id) => styles[id] || null,
+    __listeners: listeners,
+    __mode: (id) => {
+      for (const k of Object.keys(styles)) delete styles[k]
+      if (id) styles[id] = {}
+    },
+    mark,
+    other,
+  }
+}
+
+function gapTap(handlers, from, to, target) {
+  handlers.touchstart[0]({ touches: [{ clientX: from[0], clientY: from[1] }], target })
+  handlers.touchend[0]({
+    changedTouches: [{ clientX: to[0], clientY: to[1] }],
+    cancelable: true,
+    preventDefault: () => {},
+  })
+}
+
+const g = gapDoc()
+const detach = F.attachGapTaps(g, true)
+assert.equal(
+  g.__listeners.touchstart.length,
+  1,
+  'a touch device gets the touch path, not the click path',
+)
+assert.equal(g.__listeners.click, undefined, 'and only the touch path — no double toggle')
+gapTap(g.__listeners, [50, 50], [50, 52], g.mark)
+assert.equal(g.mark.__open(), true, 'a tap on a mark opens the callout')
+gapTap(g.__listeners, [50, 50], [50, 52], g.mark)
+assert.equal(g.mark.__open(), false, 'a second tap on the same mark closes it')
+gapTap(g.__listeners, [50, 50], [50, 52], g.mark)
+assert.equal(g.mark.__open(), true)
+gapTap(g.__listeners, [50, 50], [50, 52], g.other)
+assert.equal(g.mark.__open(), false, 'a tap anywhere else closes it')
+gapTap(g.__listeners, [50, 50], [50, 52], g.mark)
+assert.equal(g.mark.__open(), true)
+g.__listeners.scroll[0]()
+assert.equal(g.mark.__open(), false, 'scrolling closes it too — the callout floats')
+gapTap(g.__listeners, [50, 50], [50, 200], g.mark)
+assert.equal(g.mark.__open(), false, 'a drag is a scroll, never a callout')
+detach()
+assert.equal(g.__listeners.touchstart.length, 0, 'the listeners leave with the caller')
+
+// The second attach is a no-op — the guard attribute is there so a re-inject
+// cannot stack a second handler and double-toggle every tap.
+const g2 = gapDoc()
+F.attachGapTaps(g2, true)
+F.attachGapTaps(g2, true)
+assert.equal(g2.__listeners.touchstart.length, 1, 'the taps attach once per document')
+
+// Edit mode owns the pointer while it is on: a callout under a caret being
+// placed is noise.
+const g3 = gapDoc()
+F.attachGapTaps(g3, true)
+g3.__mode('dsh-job-cv-edit')
+gapTap(g3.__listeners, [50, 50], [50, 52], g3.mark)
+assert.equal(g3.mark.__open(), false, 'edit mode keeps the callout down')
+
+// A fine pointer gets the click path, so the explanation is one gesture
+// everywhere — not a hover-only secret.
+const g4 = gapDoc()
+F.attachGapTaps(g4, false)
+assert.equal(g4.__listeners.click.length, 1)
+g4.__listeners.click[0]({ target: g4.mark })
+assert.equal(g4.mark.__open(), true, 'a click opens the same callout')
+g4.__listeners.click[0]({ target: g4.other })
+assert.equal(g4.mark.__open(), false)
 assert.ok(fetchAsk.includes('paste'), 'and a thin scrape comes back to me, not to an invention')
 assert.ok(!F.buildPostFetchRequest({ jobUrl: '' }).includes('Job post:'), 'no link, no link line')
 
