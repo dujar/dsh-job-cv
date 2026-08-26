@@ -134,4 +134,80 @@ await assert.rejects(B.intakeCv('s1', { name: 'cv.pdf' }), /file too large \(413
 globalThis.fetch = async () => ({ ok: true, json: async () => ({ ok: true }) })
 await assert.rejects(B.intakeCv('s1', { name: 'cv.pdf' }), /no staged path/)
 
+// ---- fetchRecentCvs: the past applications the start form offers ----
+let recentsUrl = null
+globalThis.fetch = async (url) => {
+  recentsUrl = url
+  return {
+    ok: true,
+    json: async () => ({
+      ok: true,
+      cvs: [
+        {
+          path: '/apps/acme-corp/42/cv/latest.html',
+          company: 'Acme Corp',
+          jobTitle: 'Senior Engineer',
+          version: 5,
+          updatedAt: Date.UTC(2025, 10, 12),
+        },
+        { path: '', company: 'no path, no offer' },
+        null,
+      ],
+    }),
+  }
+}
+const offered = await B.fetchRecentCvs('s9')
+assert.equal(recentsUrl, '/jobcv/cvs?session=s9')
+assert.equal(offered.cvs.length, 1, 'entries without a path are not offered')
+assert.equal(offered.cvs[0].path, '/apps/acme-corp/42/cv/latest.html')
+assert.equal(offered.master, null, 'no master in the listing, no pinned row')
+
+// A master in the listing becomes the pinned pick row — but only when its
+// mirror gave a real path: pointing Start at a file that may not exist would
+// waste the application's first message.
+globalThis.fetch = async () => ({
+  ok: true,
+  json: async () => ({
+    ok: true,
+    cvs: [],
+    master: { version: 2, updatedAt: Date.UTC(2025, 10, 12), path: '/apps/master/cv/latest.html' },
+  }),
+})
+const withMaster = await B.fetchRecentCvs('s9')
+assert.equal(withMaster.cvs.length, 0)
+assert.equal(withMaster.master.path, '/apps/master/cv/latest.html')
+assert.equal(withMaster.master.badge, 'master', 'the pinned row says what it is')
+assert.ok(withMaster.master.version === 2)
+globalThis.fetch = async () => ({
+  ok: true,
+  json: async () => ({ ok: true, cvs: [], master: { version: 2, path: '' } }),
+})
+assert.equal((await B.fetchRecentCvs('s9')).master, null, 'no mirror path, no offer')
+
+// Every failure degrades to the empty answer — the pick list is a
+// convenience, and the manual path/drop entry underneath must be all
+// onboarding depends on.
+globalThis.fetch = async () => ({ ok: false, status: 500, json: async () => ({ error: 'x' }) })
+assert.deepEqual(await B.fetchRecentCvs('s9'), { cvs: [], master: null })
+globalThis.fetch = async () => ({ ok: true, json: async () => ({ ok: true }) })
+assert.deepEqual(await B.fetchRecentCvs('s9'), { cvs: [], master: null })
+globalThis.fetch = async () => {
+  throw new Error('host down')
+}
+assert.deepEqual(await B.fetchRecentCvs('s9'), { cvs: [], master: null })
+
+// ---- labels: company — title, with an honest fallback for hand-made folders ----
+assert.equal(
+  B.recentLabel({ company: 'Acme Corp', jobTitle: 'Senior Engineer' }),
+  'Acme Corp — Senior Engineer',
+)
+assert.equal(B.recentLabel({ company: 'Acme Corp', jobTitle: '   ' }), 'Acme Corp', 'no empty dash')
+// <root>/<company>/<job>: the company is the second-to-last segment
+assert.equal(B.recentLabel({ workspace: '/apps/globex/77', company: '' }), 'globex')
+assert.equal(B.recentLabel({ workspace: '', company: '' }), 'Past application')
+// subline: version and date when present; nothing when both are missing
+assert.ok(B.recentSubline({ version: 5, updatedAt: Date.UTC(2025, 10, 12) }).startsWith('v5 ·'))
+assert.equal(B.recentSubline({ version: 0, updatedAt: 0 }), '')
+assert.equal(B.recentSubline(null), '')
+
 console.log('ok  onboarding helpers')

@@ -1,5 +1,5 @@
 import { strict as assert } from 'node:assert'
-import { mkdtemp, rm, readdir, readFile, stat, lstat } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, readdir, readFile, stat, lstat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
@@ -11,9 +11,13 @@ import {
   applicationsRoot,
   candidacyRoot,
   listCandidacyFiles,
+  readCandidacyIdentity,
+  isStrongJobSlug,
+  LOCK_WAIT_MS,
   CANDIDACY_DIRS,
   mirrorCvVersion,
 } from '../lib/store/workspace.js'
+import { normalizeUrl as normalizeJobUrl } from '../lib/store/joblist.js'
 import {
   saveIntakeFile,
   intakeDirFor,
@@ -92,11 +96,10 @@ try {
   assert.ok(readmeAgain.includes('Senior Engineer'), 'resume does not rewrite the README')
 
   // listCandidacyFiles: names + sizes, newest first; missing dir -> []
+  // Root files: the README breadcrumb plus the recorded identity (which
+  // posting this folder is FOR — what makes Acme/Acme Corp one folder).
   const files = await listCandidacyFiles(join(dir, 'acme-corp', '42'))
-  assert.deepEqual(
-    files.map((f) => f.name),
-    ['README.md'],
-  )
+  assert.deepEqual(files.map((f) => f.name).sort(), ['README.md', 'application.json'])
   assert.ok(files[0].size > 0)
   assert.ok(files[0].mtime > 0)
   assert.deepEqual(await listCandidacyFiles(join(dir, 'does-not-exist')), [])
@@ -218,6 +221,167 @@ try {
   assert.equal(INTAKE_LIMIT, 12 * 1024 * 1024)
 } finally {
   await rm(intakeDir, { recursive: true, force: true })
+}
+
+// ---- folder identity: one posting, ONE folder, however it is spelled ----
+{
+  const root = await mkdtemp(join(tmpdir(), 'jobcv-identity-'))
+  try {
+    const urlA = 'https://jobs.acme.com/123'
+
+    const first = await upsertCandidacy(root, {
+      company: 'Acme Corp',
+      jobUrl: urlA,
+      jobTitle: 'Senior Engineer',
+    })
+    assert.equal(first.created, true)
+    assert.equal(first.adoptedBy, null)
+
+    // The same posting under a different company spelling adopts the
+    // existing folder instead of forking a twin that would share (and
+    // clobber) its cv/ directory.
+    const again = await upsertCandidacy(root, {
+      company: 'Acme',
+      jobUrl: urlA + '/?trk=public_search&li_fat_id=abc',
+    })
+    assert.equal(again.created, false)
+    assert.equal(again.adoptedBy, 'url')
+    assert.equal(again.path, first.path)
+
+    const identity = await readCandidacyIdentity(first.path)
+    assert.equal(normalizeJobUrl(identity.jobUrl), urlA)
+    assert.ok(identity.recordedAt > 0)
+
+    // A legacy fork — made before identity files existed — is healed when
+    // the board id is unique enough to be trusted on its own.
+    const legacy = join(root, 'acme-corp-legacy', '456789')
+    await mkdir(legacy, { recursive: true })
+    const healed = await upsertCandidacy(root, {
+      company: 'ACME Corporation',
+      jobUrl: 'https://jobs.acme.com/456789',
+    })
+    assert.equal(healed.created, false, 'the strong board id identifies the posting')
+    assert.equal(healed.adoptedBy, 'id')
+    assert.equal(healed.path, legacy)
+
+    // ---- strong vs weak slugs: what may be trusted across companies
+    assert.equal(isStrongJobSlug('3876543210'), true)
+    assert.equal(isStrongJobSlug('7654321'), true)
+    assert.equal(isStrongJobSlug('a1b2c3d4-e5f6-a7b8-c9d0-e1f2a3b4c5d6'), true)
+    assert.equal(isStrongJobSlug('senior-engineer'), false)
+    assert.equal(isStrongJobSlug('123'), false, 'short numbers are not board-minted ids')
+
+    // A TEXT slug is not an identity: two companies may honestly share one,
+    // so no adoption happens without a matching recorded URL.
+    const weak = await upsertCandidacy(root, {
+      company: 'Globex',
+      jobUrl: 'https://example.com/jobs/senior-engineer',
+    })
+    assert.equal(weak.created, true)
+    const weakAgain = await upsertCandidacy(root, {
+      company: 'Initech',
+      jobUrl: 'https://other.example.com/careers/senior-engineer',
+    })
+    assert.equal(weakAgain.created, true, 'a shared text slug never merges two companies')
+    assert.notEqual(weakAgain.path, weak.path)
+
+    // A LEGACY twin — weak slug, no application.json — still heals: its
+    // creation breadcrumb has carried "Job post: <url>" since the first
+    // release, and that line speaks for the folder.
+    const legacyWeak = join(root, 'acme', 'senior-engineer')
+    await mkdir(legacyWeak, { recursive: true })
+    await writeFile(
+      join(legacyWeak, 'README.md'),
+      '# Acme\n\nJob post: https://example.com/jobs/senior-engineer\n',
+      'utf8',
+    )
+    const healedWeak = await upsertCandidacy(root, {
+      company: 'Acme Corporation',
+      jobUrl: 'https://example.com/jobs/senior-engineer',
+    })
+    assert.equal(healedWeak.created, false, 'the old README still identifies its folder')
+    assert.equal(healedWeak.adoptedBy, 'url')
+    assert.equal(healedWeak.path, legacyWeak)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+}
+
+// ---- a name taken by ANOTHER posting never mixes two applications ----
+{
+  const root = await mkdtemp(join(tmpdir(), 'jobcv-clash-'))
+  try {
+    const first = await upsertCandidacy(root, {
+      company: 'Acme',
+      jobId: 'eng-2024',
+      jobUrl: 'https://jobs.acme.com/111',
+    })
+    assert.equal(first.created, true)
+
+    // Same company slug, same explicit id, genuinely different posting.
+    const clash = await upsertCandidacy(root, {
+      company: 'Acme',
+      jobId: 'eng-2024',
+      jobUrl: 'https://jobs.acme.com/222',
+    })
+    assert.equal(clash.created, true, 'a different posting is not silently merged')
+    assert.notEqual(clash.path, first.path)
+    assert.ok(clash.path.startsWith(join(root, 'acme', 'eng-2024-')))
+
+    // The sibling name is stable, however the paste was dusted.
+    const again = await upsertCandidacy(root, {
+      company: 'Acme',
+      jobId: 'eng-2024',
+      jobUrl: 'https://jobs.acme.com/222?ref=x&utm_source=y',
+    })
+    assert.equal(again.created, false)
+    assert.equal(again.adoptedBy, 'url')
+    assert.equal(again.path, clash.path)
+
+    // ...and the original posting still owns its folder.
+    const original = await upsertCandidacy(root, {
+      company: 'Acme',
+      jobId: 'eng-2024',
+      jobUrl: 'https://jobs.acme.com/111',
+    })
+    assert.equal(original.created, false)
+    assert.equal(original.adoptedBy, 'exact')
+    assert.equal(original.path, first.path)
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+}
+
+// ---- the folder lock: concurrent mirrors serialize, stale locks yield ----
+{
+  const ws = await mkdtemp(join(tmpdir(), 'jobcv-lock-'))
+  try {
+    // Many writers to the SAME file name at once: every write completes,
+    // latest.html ends valid, and the lock leaves with the last writer.
+    const writes = []
+    for (let i = 0; i < 25; i++) {
+      writes.push(mirrorCvVersion(ws, 1, '<p>save ' + i + '</p>'))
+    }
+    const results = await Promise.all(writes)
+    assert.equal(results.length, 25)
+    const latest = await readFile(join(ws, 'cv', 'latest.html'), 'utf8')
+    assert.ok(/^<p>save \d+<\/p>$/.test(latest), 'no torn read: ' + latest)
+    let entries = await readdir(ws)
+    assert.ok(!entries.includes('.lock'), 'the lock releases with the write')
+
+    // An ABANDONED lock (a killed process) does not wedge the next write.
+    const { mkdir: mkDir, utimes } = await import('node:fs/promises')
+    await mkDir(join(ws, '.lock'))
+    const past = new Date(Date.now() - 120000)
+    await utimes(join(ws, '.lock'), past, past)
+    const started = Date.now()
+    await mirrorCvVersion(ws, 2, '<p>after stale</p>')
+    assert.ok(Date.now() - started < LOCK_WAIT_MS, 'a stale lock is taken over, not waited out')
+    const v2 = await readFile(join(ws, 'cv', 'v2.html'), 'utf8')
+    assert.equal(v2, '<p>after stale</p>')
+  } finally {
+    await rm(ws, { recursive: true, force: true })
+  }
 }
 
 console.log('ok  workspace + intake')
