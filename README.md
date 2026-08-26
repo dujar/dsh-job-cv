@@ -817,7 +817,10 @@ real path of a dropped file, so its bytes are uploaded).
 
 - Documents persist per session under `$DSH_HOME/dsh-job-cv/sessions/`
   with the last 10 versions kept in history — the groundwork for a fuller
-  job workspace (rollback, multiple documents per job application).
+  job workspace (rollback, multiple documents per job application). The
+  master CV's own record lives beside them as `master.json`, on the same
+  terms: last 10 versions, atomic writes, and a file that cannot be parsed
+  raises rather than reading as empty.
   Saves are serialized per session and written temp-file-then-rename, and
   a document file that cannot be parsed raises instead of quietly reading
   as a new session (which would let the next save overwrite it).
