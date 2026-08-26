@@ -60,6 +60,8 @@ export default [
         fetch: 'readonly',
         EventSource: 'readonly',
         FileReader: 'readonly',
+        DOMParser: 'readonly',
+        XMLSerializer: 'readonly',
         setInterval: 'readonly',
         clearInterval: 'readonly',
         setTimeout: 'readonly',

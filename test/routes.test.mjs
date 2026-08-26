@@ -69,6 +69,33 @@ assert.ok(
   skill.includes('do not guess'),
   'a guessed session id saves successfully into a document nobody watches',
 )
+assert.ok(
+  skill.includes('SEVERAL JOBS IN ONE SESSION'),
+  'the contract explains that one session can hold several applications',
+)
+assert.ok(skill.includes('/jobcv/switch'), 'the contract tells the agent how to switch jobs')
+assert.ok(
+  skill.includes('resumed'),
+  'the switch answer says whether earlier work came back with the job',
+)
+assert.ok(
+  skill.includes('BIND YOUR SAVES'),
+  'the contract binds saves to the posting they were written for',
+)
+assert.ok(skill.includes('409'), 'the contract names the status a mid-turn switch answers with')
+
+// the master CV: source of truth, own version line, mechanical deltas
+assert.ok(skill.includes('/jobcv/master'), 'the contract names the master route')
+assert.ok(skill.includes('THE MASTER CV'), 'the contract explains what the master is')
+assert.ok(
+  skill.includes('do NOT ask for a'),
+  'with a master present, a start without a CV path starts from it instead of asking',
+)
+assert.ok(skill.includes('/jobcv/delta'), 'the agent reads the compact delta, never every past CV')
+assert.ok(
+  skill.includes('NEVER through /jobcv/doc'),
+  'saving the master through the candidacy route would overwrite the tailored CV',
+)
 
 // route surface: exactly ONE exact-path registration per route (the webServer
 // rejects duplicate exact paths — the boot crash this test guards against)
@@ -88,19 +115,27 @@ function entryFor(all, path) {
 const paths = groups.flatMap((g) => g.entries.map((e) => e.path))
 assert.deepEqual(paths, [...new Set(paths)], 'one registration per exact path')
 assert.deepEqual(paths.sort(), [
+  '/jobcv/applications',
   '/jobcv/brief',
+  '/jobcv/candidacies',
+  '/jobcv/cvs',
+  '/jobcv/delta',
   '/jobcv/doc',
   '/jobcv/file',
   '/jobcv/fit',
   '/jobcv/history',
   '/jobcv/intake',
+  '/jobcv/joblist',
   '/jobcv/letter',
+  '/jobcv/master',
   '/jobcv/post',
   '/jobcv/proposal',
   '/jobcv/proposal/decision',
   '/jobcv/restore',
   '/jobcv/skill',
+  '/jobcv/status',
   '/jobcv/stream',
+  '/jobcv/switch',
   '/jobcv/workspace',
 ])
 
@@ -122,7 +157,11 @@ assert.ok(summary.includes('GET /jobcv/workspace'))
 assert.ok(summary.includes('POST /jobcv/workspace'))
 assert.ok(summary.includes('POST /jobcv/intake'))
 assert.ok(summary.includes('GET /jobcv/history'))
+assert.ok(summary.includes('GET /jobcv/cvs'))
 assert.ok(summary.includes('POST /jobcv/restore'))
+assert.ok(summary.includes('GET /jobcv/master'))
+assert.ok(summary.includes('POST /jobcv/master'))
+assert.ok(summary.includes('GET /jobcv/delta'))
 
 // the doc handler dispatches GET vs POST itself
 function fakeRes() {
@@ -339,9 +378,9 @@ try {
   assert.equal(wg.code, 200)
   assert.equal(wg.body.path, pathJoin(wsRoot, 'apps', 'acme-corp', '42'))
   assert.deepEqual(
-    wg.body.files.map((f) => f.name),
-    ['README.md'],
-    'the breadcrumb written by the upsert is listed',
+    wg.body.files.map((f) => f.name).sort(),
+    ['README.md', 'application.json'],
+    'the breadcrumb and the recorded identity are listed',
   )
   assert.equal(wg.body.company, 'Acme Corp')
   assert.equal(wg.body.jobTitle, 'Senior Engineer')
@@ -807,6 +846,135 @@ import { createDocStore } from '../lib/store/doc-store.js'
   const noSession = fakeRes()
   await streamEntry.handler({ method: 'GET', url: '/jobcv/stream' }, noSession)
   assert.equal(noSession.code, 400, 'a stream needs a session to stream')
+}
+
+// ---- GET /jobcv/cvs: the pick list onboarding offers before asking for a file ----
+{
+  const home = await mkdtemp(pathJoin(tmpdir(), 'dsh-job-cv-recents-'))
+  const store = createDocStore(home)
+  const acme = pathJoin(home, 'apps', 'acme-corp', '42')
+  await store.save('past-1', { html: '<html>acme tailored</html>' })
+  await store.setWorkspace(
+    'past-1',
+    acme,
+    'https://jobs.example.com/42',
+    'Acme Corp',
+    'Senior Engineer',
+  )
+
+  const groups = defineJobCvRoutes({
+    store,
+    resolveRoot: () => home,
+    intakeRoot: home,
+    sendText: () => {},
+    skillText: '',
+  })
+  const cvs = entryFor(groups, '/jobcv/cvs')
+  assert.equal(cvs.method, 'GET', 'the pick list is read-only')
+
+  const miss = fakeRes()
+  await cvs.handler({ method: 'GET', url: '/jobcv/cvs' }, miss)
+  assert.equal(miss.code, 400, 'a listing needs a session like every other GET')
+
+  const fresh = fakeRes()
+  await cvs.handler({ method: 'GET', url: '/jobcv/cvs?session=fresh' }, fresh)
+  assert.equal(fresh.code, 200)
+  assert.equal(fresh.body.cvs.length, 1)
+  assert.equal(fresh.body.cvs[0].path, pathJoin(acme, 'cv', 'latest.html'))
+  assert.equal(fresh.body.cvs[0].company, 'Acme Corp')
+  assert.equal(fresh.body.master, null, 'no master yet — the form simply hides its pinned row')
+
+  // With a master saved, the listing pins it — mirrored into THIS root first,
+  // so the path it hands out exists right now.
+  await store.saveMaster('fresh', {
+    html: '<html><body><p>the source of truth</p></body></html>',
+    note: 'first master',
+  })
+  const pinned = fakeRes()
+  await cvs.handler({ method: 'GET', url: '/jobcv/cvs?session=fresh' }, pinned)
+  assert.equal(pinned.body.master.version, 1)
+  assert.equal(pinned.body.master.path, pathJoin(home, 'master', 'cv', 'latest.html'))
+  assert.equal(
+    await readFile(pinned.body.master.path, 'utf8'),
+    '<html><body><p>the source of truth</p></body></html>',
+  )
+
+  const self = fakeRes()
+  await cvs.handler({ method: 'GET', url: '/jobcv/cvs?session=past-1' }, self)
+  assert.deepEqual(
+    self.body.cvs,
+    [],
+    'a session is never offered its own record — onboarding is where version 0 lives',
+  )
+
+  // the guard in front of the handler enforces the read-only verb
+  const guardedCvs = guardHandler(cvs, guardDeps)
+  const cvsVerb = fakeRes()
+  await guardedCvs(
+    { method: 'POST', url: '/jobcv/cvs?session=x', headers: { host: '127.0.0.1:3080' } },
+    cvsVerb,
+  )
+  assert.equal(cvsVerb.code, 405)
+
+  // ---- the master routes: read, save, delta ----
+  const masterEntry = entryFor(groups, '/jobcv/master')
+  assert.equal(masterEntry.method, undefined, 'the master handler dispatches GET vs POST itself')
+  const masterMiss = fakeRes()
+  await masterEntry.handler({ method: 'GET', url: '/jobcv/master' }, masterMiss)
+  assert.equal(masterMiss.code, 400)
+
+  const masterGet = fakeRes()
+  await masterEntry.handler({ method: 'GET', url: '/jobcv/master?session=fresh' }, masterGet)
+  assert.equal(masterGet.code, 200)
+  assert.equal(masterGet.body.master.version, 1)
+  assert.ok(masterGet.body.master.html.includes('source of truth'))
+  assert.equal(masterGet.body.path, pathJoin(home, 'master', 'cv', 'latest.html'))
+
+  const masterPost = fakeRes()
+  await masterEntry.handler(
+    fakeReq('POST', '/jobcv/master', {
+      sessionId: 'fresh',
+      html: '<html><body><p>master v2</p></body></html>',
+      note: 'folded a confirmed number back in',
+    }),
+    masterPost,
+  )
+  assert.equal(masterPost.code, 200)
+  assert.equal(masterPost.body.version, 2, 'the master versions independently of any candidacy')
+  assert.equal(masterPost.body.path, pathJoin(home, 'master', 'cv', 'latest.html'))
+  const reread = fakeRes()
+  await masterEntry.handler({ method: 'GET', url: '/jobcv/master?session=fresh' }, reread)
+  assert.ok(reread.body.master.html.includes('master v2'))
+
+  const masterBad = fakeRes()
+  await masterEntry.handler(fakeReq('POST', '/jobcv/master', { sessionId: 'fresh' }), masterBad)
+  assert.equal(masterBad.code, 400)
+
+  const deltaEntry = entryFor(groups, '/jobcv/delta')
+  assert.equal(deltaEntry.method, 'GET', 'the diff is computed by the host and read-only')
+  const deltaMiss = fakeRes()
+  await deltaEntry.handler({ method: 'GET', url: '/jobcv/delta' }, deltaMiss)
+  assert.equal(deltaMiss.code, 400)
+  const deltaCall = fakeRes()
+  await deltaEntry.handler({ method: 'GET', url: '/jobcv/delta?session=fresh' }, deltaCall)
+  assert.equal(deltaCall.code, 200)
+  assert.equal(deltaCall.body.masterVersion, 2)
+  // the session's own tailored CV (saved above through /jobcv/cvs setup) is
+  // what the delta compares against
+  assert.equal(deltaCall.body.kind, 'cv')
+
+  // restoring an earlier master rides the restore route's kind dispatch
+  const restoreEntry = entryFor(groups, '/jobcv/restore')
+  const restoreMaster = fakeRes()
+  await restoreEntry.handler(
+    fakeReq('POST', '/jobcv/restore', { sessionId: 'fresh', version: 1, kind: 'master' }),
+    restoreMaster,
+  )
+  assert.equal(restoreMaster.code, 200)
+  assert.equal(restoreMaster.body.kind, 'master')
+  assert.equal(restoreMaster.body.version, 3, 'a restore saves forward, never destructively')
+
+  await rm(home, { recursive: true, force: true })
 }
 
 console.log('ok  routes + skill contract')

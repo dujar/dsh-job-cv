@@ -189,6 +189,7 @@ try {
     brief: null,
     letter: null,
     letterHistory: [],
+    application: null,
     note: '',
     company: '',
     jobTitle: '',
@@ -324,6 +325,79 @@ try {
     'the version rolled away from is still in the timeline',
   )
   assert.equal(await store.restoreLetter('s1', 99), null, 'a version that never existed is null')
+
+  await rm(dir, { recursive: true, force: true })
+}
+
+// ---- listRecentCvs: what onboarding offers from past applications ----
+{
+  const dir = await mkdtemp(join(tmpdir(), 'jobcv-recents-'))
+  const wsA = join(dir, 'apps', 'acme-corp', '42')
+  const wsB = join(dir, 'apps', 'globex', '9')
+  const store = createDocStore(join(dir, 'store'))
+
+  // Two sessions open the SAME candidacy folder: one CV to choose, not two.
+  await store.save('old-acme', { html: '<html>acme v1</html>' })
+  await store.setWorkspace(
+    'old-acme',
+    wsA,
+    'https://jobs.example.com/42',
+    'Acme Corp',
+    'Senior Engineer',
+  )
+  await store.save('new-acme', { html: '<html>acme latest</html>', note: 'tailored again' })
+  await store.setWorkspace(
+    'new-acme',
+    wsA,
+    'https://jobs.example.com/42',
+    'Acme Corp',
+    'Senior Engineer',
+  )
+  // A second application, touched later.
+  await new Promise((r) => setTimeout(r, 5))
+  await store.save('s-globex', { html: '<html>globex</html>' })
+  await store.setWorkspace('s-globex', wsB, undefined, 'Globex', '')
+
+  // Records that must never be offered: a broken file, a never-saved session
+  // (version 0), and a save that never got a candidacy folder.
+  await writeFile(join(dir, 'store', 'sessions', 'broken.json'), '{ truncated', 'utf8')
+  await writeFile(
+    join(dir, 'store', 'sessions', 'fresh.json'),
+    JSON.stringify({ version: 0, html: '' }),
+    'utf8',
+  )
+  await writeFile(
+    join(dir, 'store', 'sessions', 'nows.json'),
+    JSON.stringify({ version: 2, html: '<html>x</html>', workspace: '' }),
+    'utf8',
+  )
+  // A persist temp left mid-write is skipped by the suffix filter alone.
+  await writeFile(join(dir, 'store', 'sessions', 'x.json.tmp-abc'), 'garbage', 'utf8')
+
+  const recents = await store.listRecentCvs('brand-new')
+  assert.equal(recents.length, 2, 'one entry per candidacy folder, deduped across sessions')
+  assert.equal(recents[0].workspace, wsB, 'most recently updated first')
+  assert.equal(recents[1].path, join(wsA, 'cv', 'latest.html'), 'the mirrored file is the offer')
+  assert.equal(recents[1].company, 'Acme Corp')
+  assert.equal(recents[1].version, 1)
+  assert.equal(
+    recents[1].sessionId,
+    'new-acme',
+    'when two sessions share a folder, their latest wins',
+  )
+  assert.ok(!recents.some((e) => e.sessionId === 'old-acme'))
+
+  const self = await store.listRecentCvs('new-acme')
+  assert.ok(!self.some((e) => e.sessionId === 'new-acme'), 'a session never offers itself')
+
+  // A candidacy folder whose mirror has vanished drops out rather than
+  // handing onboarding a dead path.
+  await rm(wsB, { recursive: true, force: true })
+  const afterDelete = await store.listRecentCvs('')
+  assert.deepEqual(
+    afterDelete.map((e) => e.workspace),
+    [wsA],
+  )
 
   await rm(dir, { recursive: true, force: true })
 }

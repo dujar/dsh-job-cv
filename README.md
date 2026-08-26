@@ -1,13 +1,184 @@
 # dsh-job-cv
 
-Job mode for the DeepSeek Harness web GUI. When the current session runs
-the **job** agent preset, the layout flips: the chat narrows into a sidebar
+A [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH)
+web-GUI plugin that adds **Job mode**: when the current session runs the
+**job** agent preset, the layout flips — the chat narrows into a sidebar
 column and the main area becomes a live CV preview rendered from an HTML
 document the agent maintains — exportable to PDF from the toolbar (browser
 print dialog, Save as PDF, A4).
 
 Scoped to one workflow: tailoring the user's CV against a job post link
 they provide together with their current CV.
+
+## Features
+
+- **Job agent preset** — seeds a `job` preset into `$DSH_HOME/.agent-presets/job`
+  (persona: **Close**, a candidate-side career strategist who works for the
+  candidate and never the employer). The mode appears in the new-session chip
+  and the Settings roster without further configuration; a locally edited seed
+  is never clobbered.
+- **Live preview pane** — the document renders in a sandboxed iframe while the
+  chat stays reachable in a sidebar. Saves are **pushed** over a server-sent
+  stream (a 2.5 s poll runs underneath as the fallback), so every agent save
+  appears within seconds and is announced ("v4 · just updated"). A host that
+  stops answering — or a 403 from the trust gate on a LAN address — is
+  reported, never silently frozen.
+- **Split or overlay, decided on real room** — enough center column and the
+  preview sits beside a squeezed chat with a draggable divider (double-click
+  resets); too little room and it takes the window, `Esc` returns. The choice
+  re-decides live as panels open and close, and persists per session.
+- **True A4 paper** — `.page` divisions render as separate sheets on a desk,
+  laid out at the 210 mm the PDF prints at and scaled as one when the pane is
+  narrow, so preview and print cannot disagree. Blank sheets are named and
+  dropped in every medium; a sheet running past 297 mm turns red with a strip
+  saying by how much — and a **Make it fit** button that asks the agent to
+  move the overflow without shrinking the type or cutting evidence.
+- **Cover letter** — a second document, not a section: its own version line,
+  its own history, its own route (`POST /jobcv/letter`). One request writes it
+  on a skeleton sheet; once it lands the toolbar becomes a CV / Letter toggle.
+- **The job post, in the preview** — the posting rendered as a styled A4 page
+  with every requirement the CV does not evidence wrapped in red
+  (`blocker` solid, `major` underlined, `minor` dashed), each explained one tap
+  away on a phone. The raw text stays pasteable and re-fetchable; a practical
+  facts strip carries location, salary, applicant counts and deadlines with
+  sources named.
+- **Fit score and gaps** — "68% fit" lives in the toolbar and dock, computed by
+  the agent (never keyword overlap in the browser). The panel lists gaps by
+  severity with the move that closes each — one gap or the whole set goes back
+  to the agent as one message — and marks itself stale the moment the document
+  moves underneath it.
+- **History as a timeline** — versions labelled by the note their author wrote,
+  newest first. Clicking shows a version without changing anything; restoring
+  is a deliberate second step that saves forward, so nothing is ever lost by
+  going back. The cover letter has its own timeline on the same terms.
+- **Proposals before changes** — wording edits arrive as a reviewable set: what
+  the text says now, why, alternatives, a box for your own words, skip. One
+  **Apply** sends every decision, and the contract binds the agent to them
+  verbatim.
+- **Comment on a part** — the document becomes a pick surface: click or drag a
+  range with a mouse, tap with a finger. Preset chips fill in the common asks,
+  notes queue up, and the batch sends as ONE chat message naming the document,
+  section, path and quoted text for every part.
+- **Edit it yourself** — a typo should not cost an agent turn: Edit makes the
+  page editable in place, saves through the same version line as everything
+  else ("Edited by hand", or your note), freezes the frame against mid-sentence
+  agent saves, and refuses to drop unsaved words on a tab switch.
+- **Export PDF** — the browser print dialog, Save as PDF, A4; the download is
+  named `Firstname_Lastname_CV_Job_Company.pdf` (and `…Cover_Letter…` for the
+  letter) from the document's own header plus the candidacy.
+- **Candidacy workspace** — one folder per application at
+  `<root>/<company>/<job-id>/`, upserted by the agent and mirrored on every
+  save; the dock lists its files with hover (or tap) previews and `Open ↗`.
+- **Application tracker** — an **Applications** panel above the composer lists
+  every application with the latest CV, cover letter and stored post of its
+  candidacy, each carrying a status tag the user maintains — `drafting`,
+  `applied`, `interview`, `offer`, `rejected` — with the applied date stamped
+  automatically, a one-line note ("phone screen Fri 14:00") and the path the
+  tag took. Past a handful of rows it becomes a workbench: search across every
+  field the listing carries (with `/`), three views over the same rows
+  (list cards / a stage-by-stage board / a dense table), filters built from
+  what each job spec has (stage chips with counts, artifacts, company, fit
+  band, recency) and a sort on every axis. The arrangement persists per
+  session; the typed query does not. The tag mirrors into the candidacy folder
+  as `status.json`, so two sessions on one application — or a hand edit
+  outside the harness — agree on where things stand; the newer write wins. A
+  row opened from another session offers **Resume here**, which hands the
+  agent the exact folder to adopt.
+- **Master CV, and deltas against it** — one document is the source of truth
+  (`POST /jobcv/master`, its own version line like the cover letter's,
+  mirrored to `<root>/master/cv/latest.html`): every application tailors it,
+  and its onboarding row sits pinned above every past application's byproduct.
+  `GET /jobcv/delta` computes what a tailored CV changed against it — a
+  normalized text-block diff built host-side, so "what did tailoring move"
+  costs one small read however many applications pile up, never a re-read of
+  every full CV. The preview toolbar grows a **vs master** panel rendering
+  that diff (green what this candidacy gained, red what it left out), stale-
+  marked when the document moves underneath it; the contract tells the agent
+  to start from the master when no CV is named, and to propose folding
+  generally-true improvements back before saving them there.
+- **Jobs list onboarding, and switching** — the start form has a second door:
+  **From a list** points at a markdown file of postings (one job per line,
+  `- Title — https://…`; a `## Company` heading names the employer below it),
+  the host parses it once (`POST /jobcv/joblist`), and its lines become the
+  pick surface — one chosen line starts exactly the same tailoring flow as a
+  pasted link. The **Jobs** panel in the dock keeps that list all session:
+  clicking another line switches which posting this session works on. An
+  unstarted line starts fresh (CV pre-filled from the list); a started one
+  resumes with its whole history — versions, letter, stored post, fit score
+  and status tag — because the outgoing candidacy archives itself into the
+  session's store and the incoming one takes over the preview. Nothing is
+  ever overwritten by a switch.
+- **Multi-device out of the box** — phone, tablet and desktop are first-class:
+  swipe between tabs inside the iframe, tap-to-pick comments, tap-to-open gap
+  callouts, 34 px touch targets, 16 px inputs (no iOS focus zoom), a wide
+  invisible divider handle, viewport-clamped popovers, and contained scroll so
+  the page behind the pane never moves.
+
+## Install
+
+> Requires Node.js 22.19+ and pnpm (`dsh plugin` installs through pnpm under
+> the hood).
+
+```sh
+# local checkout (development)
+dsh plugin --profile web add <path-to-this-checkout>
+
+# from a git remote (after publishing)
+dsh plugin --profile web add github:<you>/dsh-job-cv
+```
+
+Then **restart `dsh web`** and refresh the browser page. The install adds
+`dsh-job-cv` to the profile's `dsh.profile.bundles`; if it is not added
+automatically, append `"dsh-job-cv"` to that array in
+`$DSH_HOME/profiles/web/package.json` and restart `dsh web`.
+
+Both halves mount on their next boot: the host routes and the `job` preset
+seed at startup, the client bundle on page refresh.
+
+## Usage
+
+1. Start a new session in **Job mode** (preset chip / Settings roster).
+2. A fresh session shows an **onboarding start form** in the preview. Two
+   ways in: paste the public job post link (**Single job**), or switch the
+   form to **From a list** and point at a markdown file of postings — pick a
+   line and that job starts. Either way, point at your current CV next:
+   the CV field first lists your **master CV pinned at the top** (when one
+   exists), then the **latest CV of every past application**
+   (`GET /jobcv/cvs`, newest first) — pick one and its path fills in; or
+   ignore the list and type a path, or drop a file (PDF/DOCX) onto the form,
+   which stages it through `POST /jobcv/intake`. A company name is optional
+   (a list line fills it in for you) and steers the workspace folder.
+3. **Start** hands the link + CV path to the chat. The agent fetches the
+   post, upserts a candidacy workspace (`POST /jobcv/workspace`,
+   `<root>/<company>/<job-id>/`), tailors the CV, and saves it through
+   `POST /jobcv/doc` — the preview updates within seconds. If the composer
+   is unreachable but a company name was given, the form opens the
+   workspace itself and shows the message to copy. The save must carry
+   `Content-Type: application/json`; the `/jobcv/skill` contract spells
+   the call out, because the trust gate rejects the content type `curl -d`
+   would otherwise pick.
+4. The dock shows the workspace folder (labeled with company — job title
+   when known) and the files the agent has saved into it, refreshed with
+   the same poll as the preview. Hovering a file chip previews its content
+   (HTML renders sandboxed, text and images render inline); `Open ↗` inside
+   the preview opens the full file in a new tab.
+5. Iterate by chatting ("make the summary sharper", "cut to one page").
+   **History** on the preview toolbar lists every saved version, newest
+   first, and restores any of them with one click — restoring is itself a
+   save, so the old current version stays in history.
+6. **Export PDF** on the preview toolbar. The download is named
+   `Firstname_Lastname_CV_Job_Company.pdf` (and
+   `Firstname_Lastname_Cover_Letter_Job_Company.pdf` for the letter) — the
+   name comes from the document's own header, the job title and company
+   from the candidacy, and whatever is not known yet is left out.
+7. **Track it** from the **Applications** button in the dock: every past and
+   current application, newest activity first, each with its status tag.
+   When you tell the agent where you stand ("I applied yesterday", "they
+   rejected me"), it records the tag for you through `POST /jobcv/status` —
+   the contract forbids it from guessing one on its own. When you want to
+   work a different posting instead, the **Jobs** button switches this
+   session to another line of your list — or loads one if you started with
+   a single link.
 
 ## How it works
 
@@ -34,10 +205,44 @@ they provide together with their current CV.
   - `GET /jobcv/fit?session=<id>` — the match score and the gaps
   - `POST /jobcv/fit` — score this CV against this post
   - `GET /jobcv/history?session=<id>` — the saved versions, newest first
-    (`&kind=letter` for the cover letter's own timeline)
+    (`&kind=letter` for the cover letter's own timeline, `&kind=master` for
+    the master CV's)
+  - `GET /jobcv/cvs?session=<id>` — the latest CV of every past application,
+    newest first, deduped per candidacy folder — the onboarding pick list,
+    with `master` carrying the mirrored master CV when one exists
+  - `GET /jobcv/joblist?session=<id>` — the session's stored pick list: the
+    parsed markdown of postings, its source path, and the default CV path
+  - `POST /jobcv/joblist` — parse a markdown file into that pick list (from a
+    typed path relative to the session's working directory, a dropped `.md`
+    staged as bytes, or raw `text`)
+  - `GET /jobcv/candidacies?session=<id>` — this session's candidacies: the
+    active one plus every archived one, with version/status/activity markers
+  - `POST /jobcv/switch` — make another posting this session's active
+    candidacy (`{sessionId, jobUrl, company?, jobTitle?, cvPath?}`); the
+    outgoing one archives whole, and the answer says whether earlier work
+    came back (`resumed`)
+  - `GET /jobcv/applications?session=<id>` — every application: latest
+    CV/letter/post per candidacy with its status tag and activity time, plus
+    the per-status counts the panel header shows
+  - `POST /jobcv/status` — record where an application stands
+    (`drafting | applied | interview | offer | rejected`, plus a note);
+    moving to `applied` stamps the date, and the tag mirrors into the
+    candidacy folder as `status.json`
   - `POST /jobcv/restore` — roll the document back to an earlier version
     (a restore is itself a save, so the rollback is never destructive;
-    `{"kind":"letter"}` rolls the cover letter back instead)
+    `{"kind":"letter"}` rolls the cover letter back instead, and
+    `{"kind":"master"}` the master CV)
+  - `GET /jobcv/master?session=<id>` — the master CV: the full source-of-
+    truth document plus its mirrored path (`<root>/master/cv/latest.html`,
+    created on read so the pick list can hand it out); `null` before the
+    first save
+  - `POST /jobcv/master` — replace the master and bump its own version line
+    (kept beside the session records as `master.json`, last 10 versions);
+    never refused by a mid-turn switch — it belongs to no posting
+  - `GET /jobcv/delta?session=<id>` — what the active CV changed against the
+    master: counts (added/removed/unchanged blocks) and only the change
+    entries, from a host-side normalized block diff (`&kind=letter` diffs
+    the cover letter instead)
   - `GET /jobcv/skill` — the agent-facing contract (A4, self-contained,
     truthful tailoring)
 - **Client half** (`lib/client.js`, built from `lib/client/` fragments)
@@ -151,6 +356,20 @@ they provide together with their current CV.
   horizontal). A one-time **‹ swipe to switch ›** hint sits under the tab
   switcher until the first switch, and only when the pointer is coarse — it
   is a hint for fingers, not mice.
+
+  The rest of the surface meets fingers halfway too. A coarse pointer gets
+  **34px-tall controls** everywhere in the pane, the overlay and the dock
+  (the desktop paddings give ~22px, under even the 24px WCAG floor), and
+  **16px inputs** — an input under 16px makes iOS Safari zoom the whole page
+  on focus, which a layout of fixed panes cannot shrug off. The split
+  divider's grab area widens from 7px to 28px (still invisible), the file
+  preview popover clamps to the viewport instead of clipping off a 360px
+  phone, the overlay and both document surfaces contain their scrolls rather
+  than chaining into the page behind them, and the start form's link and path
+  fields stop fighting the mobile keyboard (`type=url`, no autocapitalize or
+  autocorrect). On a phone the toolbar drops its "CV preview" eyebrow — the
+  dock already said it — and the comment box loses the ⌘/Ctrl+Enter hint,
+  which names a keyboard the reader does not have.
 
 ### The cover letter
 
@@ -289,6 +508,113 @@ hashes to something this plugin wrote: edit one byte and it is yours, said out
 loud in the log rather than silently overwritten. The harness reads presets at
 boot, so a refresh lands on the next `dsh web` restart.
 
+### The application tracker
+
+**Applications** in the dock opens a panel over everything: one row per
+candidacy, each carrying its status tag as a colored select (`drafting`,
+`applied`, `interview`, `offer`, `rejected`), the latest CV and cover letter
+versions it can point at, whether the post was stored, the fit score when one
+was given, and how long ago any of that moved. Expanding a row shows the job
+link, the applied date, the tag's history ("interview · 2d ago · panel Thu"),
+the workspace path, direct links to `cv/latest.html`, `letter/latest.html` and
+`notes/job-post.txt`, a note field, and — for rows belonging to another
+session — **Resume here**, which hands the agent a message telling it to adopt
+that exact folder rather than fork a new one.
+
+Past a handful of applications, scanning stops working, so the overview is a
+small workbench over the same listing:
+
+- **Search** (`/` focuses it) reaches every field the host carries — company,
+  role, link, folder path, note, and the note inside each entry of the tag's
+  history. Whitespace terms AND together: `acme interview` finds the Acme row
+  whose history says interview.
+- **Three views** over the same rows. _List_ is the card view described above.
+  _Board_ lays the pipeline out as five stage columns (drafting → rejected),
+  one glanceable card per application, moving with its tag. _Table_ is a dense
+  grid for surveying many rows at once — Role, Stage, Fit, Applied, Updated.
+- **Filters built from what a job spec has**: stage chips carrying the counts
+  of the full listing, an artifact facet (has a CV / letter / stored post /
+  any note), a company facet derived from the candidacies themselves, fit
+  bands mirroring the fit panel's thresholds (strong 75%+, partial 50–74%,
+  thin under 50%, plus not-scored-yet), and recency buckets measured on each
+  row's activity stamp (moved today / this week / this month / quiet 30+ days).
+- **Sort on every axis** — recently updated (the default), applied date, fit
+  score, company, role, or pipeline stage — with a direction toggle. Rows with
+  no fit score or no applied stamp sort last whichever way the arrow points,
+  so an ascending sort never photobombs with blanks.
+
+Search, filters and sorting run client-side over the fetched listing (the host
+caps it well below browser-painful sizes), and the chosen arrangement — view,
+sort, filters — persists per session in localStorage. The typed query
+deliberately does not persist: reopening the panel to a pre-typed search reads
+as "where did my applications go". When facets hide everything, the empty
+state says how many of how many are hidden and offers **Show everything**
+instead of a bare blank.
+
+The tag is deliberately the user's report, never an inference: the host
+stores what was set with its date and note, stamps the applied date the
+first time a row reaches `applied` (keeping it through `interview` and
+`offer` — the day they applied does not move because the process did), and
+the contract tells the agent to record a status only from something the user
+actually said. Setting a row back to `drafting` clears the tag entirely.
+
+Storage follows the plugin's oldest habit: the session record is the source
+of truth, and the candidacy folder gets a mirror (`status.json`, written
+temp-then-rename like every other mirrored file). On read the newer write
+wins, so two sessions on one application converge, a hand edit outside the
+harness counts, and a reset writes through — a stale mirror can never
+resurrect an old tag on the next listing. A tag set anywhere is also
+_activity_: its row rises, because what moved last is exactly what someone
+scanning their search wants on top. The listing reads session files
+directly, degrades over unreadable records instead of failing, and never
+touches the read cache — an onboarding glance must not evict live sessions.
+
+The dock carries the same state twice: a count on the button, and — once
+this session's application is tagged — a pill next to the version line
+("● applied · 12 Mar") that opens the panel. Both refresh when the panel
+closes, not on every poll tick: the listing scans every session file, and
+that is not a 2.5-second cost.
+
+### Several jobs in one session
+
+A session holds one ACTIVE candidacy document, and — since the jobs list
+arrived — any number of parked ones. The session file keeps whichever is on
+screen; each parked job lives in an archive file beside it
+(`sessions/<id>.jobs/<hash>.json`, keyed by the posting's URL) holding its
+entire record: every CV version, the cover letter and its timeline, the
+stored post, the fit score, the status tag. **Switching** (`POST
+/jobcv/switch`) parks the active record into its archive and loads the
+target's — or a fresh, link-stamped record when that posting was never
+worked on here — and pushes the new projection to the preview over the same
+stream a save uses. A promoted archive deletes itself, so a session never
+lists one candidacy twice.
+
+The rest of the plugin treats archives as ordinary past applications: the
+tracker aggregates them per workspace folder like any other session's rows,
+and the onboarding pick list offers their mirrored `cv/latest.html` (only
+the asking session's _active_ record stays hidden from it). A status tag
+carries its `jobUrl`, so retagging a parked row writes into THAT job's
+record instead of whichever candidacy happens to be active — a panel click
+can never move the wrong application's status.
+
+**Identity is the normalized link — at two grades of strictness.** Every
+URL-derived key runs on the MATCHING form: trailing slash, `#fragment`,
+host case, `http`/`https`, whitespace, `utm_*`, LinkedIn tracking dust and
+sometimes-functional tokens like `?ref=` are all ignored when deciding
+whether two spellings are one posting. Stored links keep the STORAGE form:
+only unambiguously-cosmetic parameters are stripped, so an Ashby link whose
+`?ref=` actually routes the board still fetches later. Without this split,
+one posting becomes two records sharing one workspace folder, quietly
+overwriting each other's `cv/latest.html` — or worse, a "cleaned" link stops
+opening the right page.
+
+**A save names its posting.** `/jobcv/doc`, `/letter`, `/post`, `/brief`,
+`/fit` and `/proposal` accept an optional `jobUrl`; when it names a
+candidacy that is no longer active — the user switched while the agent was
+mid-turn — the save is refused with 409 (`stale save`) instead of landing
+the wrong CV on whatever job is on screen now. Omitting it behaves exactly
+as before; the contract tells the agent to always send it.
+
 ### Reviewing changes before they happen
 
 The agent does not save wording changes — it proposes them. A pending
@@ -420,38 +746,6 @@ editing what you wrote. Two of the deck's defenses do become permanent, which is
 what they should have been: `<script>` elements stay removed, and an embedded
 external page stays a link to it.
 
-## Workflow
-
-1. Start a new session in **Job mode** (preset chip / Settings roster).
-2. A fresh session shows an **onboarding start form** in the preview: paste
-   the public job post link and point at your current CV — either type its
-   path or drop the file (PDF/DOCX) onto the form, which stages it through
-   `POST /jobcv/intake` and fills in the stored path. A company name is
-   optional and steers the workspace folder.
-3. **Start** hands the link + CV path to the chat. The agent fetches the
-   post, upserts a candidacy workspace (`POST /jobcv/workspace`,
-   `<root>/<company>/<job-id>/`), tailors the CV, and saves it through
-   `POST /jobcv/doc` — the preview updates within seconds. If the composer
-   is unreachable but a company name was given, the form opens the
-   workspace itself and shows the message to copy. The save must carry
-   `Content-Type: application/json`; the `/jobcv/skill` contract spells
-   the call out, because the trust gate rejects the content type `curl -d`
-   would otherwise pick.
-4. The dock shows the workspace folder (labeled with company — job title
-   when known) and the files the agent has saved into it, refreshed with
-   the same poll as the preview. Hovering a file chip previews its content
-   (HTML renders sandboxed, text and images render inline); `Open ↗` inside
-   the preview opens the full file in a new tab.
-5. Iterate by chatting ("make the summary sharper", "cut to one page").
-   **History** on the preview toolbar lists every saved version, newest
-   first, and restores any of them with one click — restoring is itself a
-   save, so the old current version stays in history.
-6. **Export PDF** on the preview toolbar. The download is named
-   `Firstname_Lastname_CV_Job_Company.pdf` (and
-   `Firstname_Lastname_Cover_Letter_Job_Company.pdf` for the letter) — the
-   name comes from the document's own header, the job title and company
-   from the candidacy, and whatever is not known yet is left out.
-
 ## Development
 
 - Edit the browser half in `lib/client/*.js`, then `npm run build:client`
@@ -473,27 +767,53 @@ Resolution order:
 
 ```
 acme-corp/3812345678/
-  README.md      what this application is, and the job link
-  cv/            v1.html, v2.html … plus latest.html
-  source/        the CV as supplied — never edited
-  notes/         the fetched job post, research, cover letter drafts
+  README.md         what this application is, and the job link
+  application.json  the recorded identity — which posting this folder is FOR
+  status.json       the pipeline tag, mirrored from the session record
+  cv/               v1.html, v2.html … plus latest.html
+  source/           the CV as supplied — never edited
+  notes/            the fetched job post, research, cover letter drafts
 ```
+
+Beside the company folders sits the **master**'s mirror,
+`master/cv/latest.html` — the source of truth every tailored CV derives
+from, written on read as well as on save so a new project root meets it
+with a real file. The master's own record (its JSON version line and
+history) lives under `$DSH_HOME/dsh-job-cv/master.json`; like every mirror,
+the folder copy is a convenience and the record is authoritative.
 
 The host derives both folder names (`slugify` for the company; the job's own
 id from the URL, else a slug of the last path segment, else a digest of the
 link). That is what makes the upsert an upsert: a second session about the
-same job — even typing the company differently — lands in the same folder and
-gets `created:false`, the agent's cue to say it is resuming rather than
-starting over.
+same job lands in the same folder and gets `created:false`, the agent's cue
+to say it is resuming rather than starting over.
 
-Every save is mirrored into `cv/` from inside the store's write lock, so the
-folder holds the actual document rather than only a README, and `latest.html`
-is directly openable and printable outside the harness. Mirroring never fails
-a save: the session file is the source of truth, and a folder that has been
-moved or made read-only only logs a warning. A CV dropped into the start form
-lands in `source/` once the folder exists, and in per-session staging before
-that (browsers withhold the real path of a dropped file, so its bytes are
-uploaded).
+**The folder is matched by posting, not by company spelling or folder
+name.** Each folder records its canonical URL in `application.json`; before
+creating `<slug(company)>/<job>`, the upsert scans the applications root for
+ANY folder whose recorded identity claims this posting and adopts it — so
+"Acme" today and "Acme Corp" next week (or a re-paste with different `?trk=`
+dust, or `http` vs `https`) stay ONE candidacy instead of forking twins that
+would overwrite each other's `cv/`. A folder made by an older build speaks
+through its creation breadcrumb instead: the `Job post:` line every README
+has carried since the first release identifies it just as well. When no URL
+was ever recorded anywhere but exactly one folder is named after a
+board-minted id (four-plus digits or a uuid — ids no two postings share),
+that folder is adopted too. Two limits keep this honest: text slugs never
+merge across companies without evidence (two firms can honestly share
+`senior-engineer`), and a preferred path already owned by a DIFFERENT
+posting never mixes them — the newcomer gets a stable sibling named
+`<job>-<hash8>` derived from its own link.
+
+Every save is mirrored into `cv/` under a **best-effort folder lock**, so two
+sessions holding the same application active serialize their writes instead
+of racing per file name. The lock is deliberately not load-bearing: after a
+short wait — or when it looks abandoned (a killed process) — the write
+proceeds unlocked, because mirroring never fails a save: the session file is
+the source of truth, and a folder that has been moved or made read-only only
+logs a warning. A CV dropped into the start form lands in `source/` once the
+folder exists, and in per-session staging before that (browsers withhold the
+real path of a dropped file, so its bytes are uploaded).
 
 - Documents persist per session under `$DSH_HOME/dsh-job-cv/sessions/`
   with the last 10 versions kept in history — the groundwork for a fuller
@@ -502,4 +822,6 @@ uploaded).
   a document file that cannot be parsed raises instead of quietly reading
   as a new session (which would let the next save overwrite it).
 
-MIT
+## License
+
+[MIT](./LICENSE)

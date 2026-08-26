@@ -7,6 +7,9 @@
 028-cv-onboard.js
 029-doc-edit.js
 030-cv-preview.js
+031-cv-master.js
+035-applications.js
+036-jobs.js
 040-job-layout.js
 050-job-dock.js
 060-plugin-wiring.js
