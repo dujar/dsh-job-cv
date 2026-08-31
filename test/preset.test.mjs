@@ -3,6 +3,7 @@ import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { skillInstructions } from '../lib/preset/preset-seed.js'
 
 // The persona and the one thing that decides whether a persona change ever
 // reaches anyone: an install that already has the preset. "Seed once, never
@@ -36,6 +37,16 @@ for (const rule of [
 ]) {
   assert.ok(PRESET_COMPOSITION.includes(rule), 'hard rule kept: ' + rule)
 }
+// The governing doctrine — facts of work done, never self-description — is in
+// HARD RULES where it is re-read every turn, not only in a candidacy README.
+assert.ok(
+  PRESET_COMPOSITION.includes('FACTS, NOT SELF-DESCRIPTION'),
+  'the facts-only doctrine is a hard rule',
+)
+assert.ok(
+  PRESET_COMPOSITION.includes('reach that conclusion themselves'),
+  'and it explains why: the reader draws the inference',
+)
 // The mechanics the mode cannot work without survive the persona rewrite.
 assert.ok(PRESET_COMPOSITION.includes('{{model}}'), 'the model template var still expands')
 assert.ok(PRESET_COMPOSITION.includes('{{cwd}}'), 'the cwd template var still expands')
@@ -43,39 +54,52 @@ assert.ok(
   PRESET_COMPOSITION.includes('CV-tailoring agent'),
   'the CV-tailoring brief lives in the persona itself, not only in the contract',
 )
-assert.ok(PRESET_COMPOSITION.includes('never invent experience, employers, dates or credentials'))
+assert.ok(
+  PRESET_COMPOSITION.includes('Never invent experience, metrics, employers or dates'),
+  'the never-invent rule is stated once, in HARD RULES',
+)
 assert.ok(PRESET_COMPOSITION.includes('steer back'), 'and out-of-scope asks steer back to the work')
 assert.ok(PRESET_COMPOSITION.includes('/jobcv/skill'), 'the agent is pointed at the contract')
 assert.ok(PRESET_COMPOSITION.includes('/jobcv/proposal'), 'wording still goes through review')
-assert.ok(PRESET_COMPOSITION.includes('no web_fetch tool'), 'and it is told to curl the post')
-// The cover letter craft lives in the persona, not only in the contract: how
-// a letter is WRITTEN is strategy, and the strategist is Close.
+// The persona is served identically to both shells now, so it must not assert
+// one runtime's fetch story — it defers to the contract, which knows.
+assert.ok(
+  !PRESET_COMPOSITION.includes('no web_fetch tool'),
+  'the persona no longer hard-codes the DSH-only fetch situation',
+)
+assert.ok(
+  PRESET_COMPOSITION.includes('whatever this runtime gives you'),
+  'it defers the page-reading mechanics to the runtime / contract',
+)
+// The persona keeps the STRATEGY of a cover letter (lead with them, one
+// specific thing, claim nothing the CV does not) and points at the contract
+// for the craft — structure, tone, one-page layout — which is where a rewrite
+// of that detail belongs, re-read on demand rather than every turn.
+assert.ok(PRESET_COMPOSITION.includes('# THE COVER LETTER'))
+assert.ok(PRESET_COMPOSITION.includes('why THIS candidate for THIS role'))
+assert.ok(
+  PRESET_COMPOSITION.includes('layout rules are in the /jobcv/skill contract'),
+  'the persona defers the craft to the contract',
+)
+assert.ok(
+  !PRESET_COMPOSITION.includes('Firstname_Lastname_Cover_Letter'),
+  'the detailed layout guide is not duplicated in the persona',
+)
+// The craft itself lives in the contract now.
+const skill = skillInstructions()
 for (const rule of [
-  '# THE COVER LETTER',
-  'Lead with THEM, not you',
+  'HOW TO WRITE IT WELL',
+  'Lead with THEM',
   '250-400 words',
   'To Whom It May Concern',
-  'Show, don',
+  "Show don't tell",
   'Active voice',
-  'Why Them',
-  'Regurgitate the CV',
-  'Clichés',
-  'Apologize for missing experience',
-]) {
-  assert.ok(PRESET_COMPOSITION.includes(rule), 'cover letter rule kept: ' + rule)
-}
-// ...and so does its layout: a letter that reads as a wall of text gets skipped.
-for (const rule of [
-  'Layout — the page must read as clean',
-  '25mm',
-  'never justify',
-  '10-12pt',
-  'matches the CV',
-  'no text boxes',
+  '"Why Them" test',
+  'regurgitate the CV',
+  'left-align, never justify',
   'Strictly one page',
-  'Firstname_Lastname_Cover_Letter_Job_Company.pdf',
 ]) {
-  assert.ok(PRESET_COMPOSITION.includes(rule), 'cover letter layout rule kept: ' + rule)
+  assert.ok(skill.includes(rule), 'the contract carries the cover-letter craft: ' + rule)
 }
 // A folded scalar would join these lines into one paragraph and the headings
 // would dissolve; the persona is markdown and must arrive as markdown.
