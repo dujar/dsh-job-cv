@@ -290,7 +290,7 @@ never a probability of an offer.
 ### History as a timeline
 
 **History** in the toolbar opens a timeline of saved versions, newest first,
-each labelled with the note its author wrote ("Quantified the the delivery
+each labelled with the note its author wrote ("Quantified the delivery
 bullets") rather than a bare timestamp. Clicking an entry **shows** that
 version in the preview — bodies are fetched one at a time
 (`GET /jobcv/history?session=…&version=N`), never shipped with the list.

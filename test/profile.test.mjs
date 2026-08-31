@@ -29,7 +29,7 @@ try {
   const two = await store.load()
   assert.ok(two.text.includes('reorg'))
   assert.equal(two.history.length, 1, 'the previous version is kept')
-  assert.ok(two.history[0].text.includes('7 years, counted from the first dev role'))
+  assert.ok(two.history[0].text.includes('counted from the first dev role'))
 
   // A fresh store instance reads what is on disk.
   const reopened = createProfileStore(dir)

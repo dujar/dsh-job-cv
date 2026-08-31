@@ -127,13 +127,13 @@ try {
   const savedProfile = toolJson(
     await rpc('tools/call', {
       name: 'jobcv_save_profile',
-      arguments: { text: '# Standing facts\n\n- 7 years, counted from the first dev role' },
+      arguments: { text: '# Standing facts\n\n- 7 years in the field' },
     }),
   )
   assert.equal(savedProfile.ok, true, 'the profile saved')
   const profileRes = await rpc('resources/read', { uri: 'jobcv://profile' })
   assert.ok(
-    profileRes.result.contents[0].text.includes('counted from 2018'),
+    profileRes.result.contents[0].text.includes('7 years in the field'),
     'the profile resource returns what was saved',
   )
   const profileGet = toolJson(

@@ -2,10 +2,9 @@
 
 ## Reporting a vulnerability
 
-Open a [GitHub security advisory](the repository/security/advisories/new)
-(private) or, if that is unavailable, email the address in the npm package
-metadata. Please do not file a public issue for a vulnerability. Expect an
-acknowledgement within a week.
+Open a private **GitHub security advisory** on this repository
+(_Security → Advisories → Report a vulnerability_). Please do not file a public
+issue for a vulnerability. Expect an acknowledgement within a week.
 
 ## What this software touches
 
