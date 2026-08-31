@@ -177,6 +177,57 @@ same job — losing the property the whole design defends. Closing this needs
 the title to become required, or a lookup that matches an existing folder by
 id prefix before creating a new one.
 
+## MCP shell — RESOLVED (v1)
+
+The plugin now also runs as an MCP server (`bin/dsh-job-cv-mcp.js`,
+`lib/mcp/`). It is NOT a port: the DSH plugin is untouched and both shells
+read/write the same `$DSH_HOME/dsh-job-cv` state.
+
+Design decisions worth remembering:
+
+- **One core, two shells.** `defineJobCvRoutes(deps)` was already
+  shell-agnostic (it takes `store` / `resolveRoot` / `sendJson`, not `ctx`).
+  The MCP shell stands those exact route groups on a plain `http.Server`
+  (`lib/mcp/ui-server.js`), wrapped in the exact `guardHandler` the plugin
+  uses. `lib/routes/mount.js` (the `ctx.webServer` binding) stays
+  plugin-only.
+- **Tools are thin wrappers over the routes, called over loopback HTTP** —
+  not in-process. The route guard, body pipeline and trust check run once,
+  identically, for the browser and for the tool layer. `isTrustedRequest`
+  passes an internal `fetch` (loopback Host, `application/json`, no Origin).
+- **The session id is the server's.** Minted once, remembered in
+  `mcp-session.json`, injected into every request. The whole "copy the
+  session id verbatim, a wrong one still 200s" section of the contract does
+  not apply to this shell.
+- **No SDK.** Newline-delimited JSON-RPC 2.0 over stdio, ~200 lines
+  (`lib/mcp/server.js`), matching the package's zero-runtime-dep rule.
+- **The preview is a new self-contained page** (`lib/mcp/ui.html`), not the
+  DSH client bundle — it consumes the same `/jobcv/stream` SSE + `/jobcv/*`
+  GETs, so it tracks saves live, but it does not (yet) have the annotate /
+  mark-a-spot surface.
+
+Still open:
+
+- **Proposal decisions have no back-channel.** In DSH the user's accept/skip
+  travels to the agent through chat; the MCP shell has no chat. v1 shows a
+  copy-paste relay in the Review tab. A `/jobcv/proposal/decision` that
+  RECORDS the choice + a `jobcv_get what:"decision"` (or a resource) would
+  close the loop.
+- **Full render parity.** Port the shell-agnostic client fragments
+  (`030-cv-preview`, `025-cv-annotate`, `027-cv-fit`, `031-cv-master`,
+  `035-applications`, `036-jobs`) into a shared `lib/render/` bundle both
+  shells load, so the MCP page gains annotate/history/master-diff without a
+  second implementation.
+- **Daemon mode.** Two MCP clients at once = two servers = two ports. A
+  first-one-binds daemon would share one preview.
+- **`jobcv_triage`.** `jobcv_load_joblist` + per-job `jobcv_open`/`jobcv_score`
+  already covers list scoring by hand; a single tool that walks the list
+  against the master and emits the scorecard is the obvious next step
+  (see "Base shortlisting" above).
+- **Reading the post.** The server has no fetch tool; the client fetches and
+  `jobcv_set_post`s. If the host ever registers a fetch provider (see
+  "Reading job posts" above) a `jobcv_ingest_post(url)` tool becomes trivial.
+
 ## Smaller
 
 - The preview polls `/jobcv/doc` every 2.5s. A push channel (SSE, or the

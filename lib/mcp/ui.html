@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Job CV — preview</title>
+    <style>
+      :root {
+        --bg: #f4f4f5;
+        --panel: #ffffff;
+        --ink: #18181b;
+        --muted: #71717a;
+        --line: #e4e4e7;
+        --accent: #2563eb;
+        --blocker: #dc2626;
+        --major: #d97706;
+        --minor: #65a30d;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        display: flex;
+        flex-direction: column;
+      }
+      header {
+        background: var(--panel);
+        border-bottom: 1px solid var(--line);
+        padding: 10px 16px;
+        display: flex;
+        align-items: baseline;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+      header h1 { font-size: 14px; margin: 0; font-weight: 700; }
+      header .meta { color: var(--muted); font-size: 12px; }
+      header .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #a1a1aa; margin-right: 5px; }
+      header .dot.live { background: #16a34a; }
+      nav { display: flex; gap: 2px; padding: 0 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+      nav button {
+        appearance: none; border: 0; background: transparent; cursor: pointer;
+        padding: 9px 14px; font: inherit; color: var(--muted);
+        border-bottom: 2px solid transparent;
+      }
+      nav button.active { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+      nav button .badge {
+        display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 6px;
+        border-radius: 9px; background: var(--line); color: var(--ink);
+        font-size: 11px; font-weight: 600; text-align: center;
+      }
+      main { flex: 1; overflow: auto; padding: 16px; }
+      .doc-frame {
+        width: 100%; max-width: 900px; margin: 0 auto; background: #fff;
+        border: 1px solid var(--line); border-radius: 4px; min-height: 60vh;
+      }
+      iframe { width: 100%; border: 0; display: block; border-radius: 4px; min-height: 80vh; }
+      .card {
+        background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+        padding: 16px; max-width: 900px; margin: 0 auto 14px;
+      }
+      .empty { color: var(--muted); text-align: center; padding: 40px 0; }
+      .score { font-size: 40px; font-weight: 800; line-height: 1; }
+      .verdict { color: var(--muted); margin-top: 6px; }
+      .gap, .strength { border-top: 1px solid var(--line); padding: 10px 0; }
+      .gap:first-of-type, .strength:first-of-type { border-top: 0; }
+      .sev { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+      .sev.blocker { color: var(--blocker); }
+      .sev.major { color: var(--major); }
+      .sev.minor { color: var(--minor); }
+      .req { font-weight: 600; margin: 2px 0; }
+      .sub { color: var(--muted); font-size: 13px; }
+      .fix { font-size: 13px; margin-top: 4px; }
+      pre.post { white-space: pre-wrap; word-wrap: break-word; font: 13px/1.6 ui-monospace, monospace; margin: 0; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); font-size: 13px; }
+      th { color: var(--muted); font-weight: 600; }
+      .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; background: var(--line); }
+      .tag.applied { background: #dbeafe; color: #1e40af; }
+      .tag.interview { background: #fef3c7; color: #92400e; }
+      .tag.offer { background: #dcfce7; color: #166534; }
+      .tag.rejected { background: #fee2e2; color: #991b1b; }
+      .opt { border: 1px solid var(--line); border-radius: 5px; padding: 8px 10px; margin: 5px 0; cursor: pointer; }
+      .opt.picked { border-color: var(--accent); background: #eff6ff; }
+      .opt .label { font-weight: 600; font-size: 12px; }
+      .relay { background: #f8fafc; border: 1px dashed var(--line); border-radius: 5px; padding: 10px; margin-top: 10px; font: 12px/1.5 ui-monospace, monospace; white-space: pre-wrap; }
+      button.act { appearance: none; border: 1px solid var(--line); background: #fff; border-radius: 5px; padding: 6px 12px; font: inherit; cursor: pointer; }
+      button.act.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+      .toolbar { max-width: 900px; margin: 0 auto 12px; display: flex; gap: 8px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Job CV — live preview</h1>
+      <span class="meta" id="meta-active">no active candidacy</span>
+      <span class="meta"><span class="dot" id="live-dot"></span><span id="live-text">connecting…</span></span>
+      <span class="meta" id="meta-session"></span>
+    </header>
+    <nav id="tabs">
+      <button data-tab="cv" class="active">CV <span class="badge" id="b-cv">0</span></button>
+      <button data-tab="letter">Letter <span class="badge" id="b-letter">0</span></button>
+      <button data-tab="post">Post</button>
+      <button data-tab="fit">Fit <span class="badge" id="b-fit">–</span></button>
+      <button data-tab="review">Review <span class="badge" id="b-review">0</span></button>
+      <button data-tab="apps">Applications</button>
+    </nav>
+    <main id="view"></main>
+
+    <script>
+      const SESSION = __JOBCV_SESSION__;
+      document.getElementById('meta-session').textContent = 'session ' + SESSION;
+      const q = (s) => '?session=' + encodeURIComponent(SESSION) + (s || '');
+      const state = { doc: null, letter: null, post: null, apps: null, tab: 'cv', picks: {} };
+
+      /* ---- tabs ---- */
+      document.getElementById('tabs').addEventListener('click', (e) => {
+        const b = e.target.closest('button[data-tab]');
+        if (!b) return;
+        state.tab = b.dataset.tab;
+        for (const el of document.querySelectorAll('nav button')) el.classList.toggle('active', el === b);
+        render();
+      });
+
+      /* ---- data ---- */
+      function applyDoc(doc) {
+        state.doc = doc;
+        const dot = document.getElementById('live-dot');
+        const txt = document.getElementById('live-text');
+        dot.classList.add('live');
+        txt.textContent = 'live';
+        const a = doc && (doc.company || doc.jobTitle)
+          ? [doc.company, doc.jobTitle].filter(Boolean).join(' — ')
+          : (doc && doc.jobUrl) || 'no active candidacy';
+        document.getElementById('meta-active').textContent = a;
+        document.getElementById('b-cv').textContent = 'v' + ((doc && doc.version) || 0);
+        document.getElementById('b-letter').textContent = doc && doc.letter ? 'v' + doc.letter.version : '0';
+        document.getElementById('b-fit').textContent = doc && doc.fit ? doc.fit.score : '–';
+        document.getElementById('b-review').textContent = doc && doc.proposal ? doc.proposal.changes.length : '0';
+        render();
+      }
+
+      async function poll() {
+        try {
+          const [letter, post, apps] = await Promise.all([
+            fetch('/jobcv/letter' + q()).then((r) => r.json()).catch(() => null),
+            fetch('/jobcv/post' + q()).then((r) => r.json()).catch(() => null),
+            fetch('/jobcv/applications' + q()).then((r) => r.json()).catch(() => null),
+          ]);
+          state.letter = letter && letter.letter ? letter.letter : null;
+          state.post = post || null;
+          state.apps = apps && apps.applications ? apps.applications : [];
+          if (['post', 'apps', 'letter'].includes(state.tab)) render();
+        } catch (e) {}
+      }
+
+      function connect() {
+        const es = new EventSource('/jobcv/stream' + q());
+        es.onmessage = (e) => {
+          try { applyDoc(JSON.parse(e.data)); } catch (_) {}
+        };
+        es.onerror = () => {
+          document.getElementById('live-dot').classList.remove('live');
+          document.getElementById('live-text').textContent = 'reconnecting…';
+        };
+      }
+
+      /* ---- rendering ---- */
+      const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+      function frame(html) {
+        const f = document.createElement('iframe');
+        f.setAttribute('sandbox', '');
+        f.srcdoc = html;
+        return f;
+      }
+
+      function render() {
+        const v = document.getElementById('view');
+        v.innerHTML = '';
+        const d = state.doc;
+        if (state.tab === 'cv') {
+          if (!d || !d.html) return void (v.innerHTML = '<p class="empty">No CV yet. Ask the assistant to open a candidacy and tailor your CV.</p>');
+          const bar = document.createElement('div');
+          bar.className = 'toolbar';
+          bar.innerHTML = '<button class="act" onclick="openRaw(\'cv\')">Open in tab (print / save PDF)</button>' +
+            (d.note ? '<span class="meta" style="align-self:center;color:var(--muted)">latest note: ' + esc(d.note) + '</span>' : '');
+          v.appendChild(bar);
+          const w = document.createElement('div');
+          w.className = 'doc-frame';
+          w.appendChild(frame(d.html));
+          v.appendChild(w);
+        } else if (state.tab === 'letter') {
+          if (!state.letter) return void (v.innerHTML = '<p class="empty">No cover letter yet.</p>');
+          const bar = document.createElement('div');
+          bar.className = 'toolbar';
+          bar.innerHTML = '<button class="act" onclick="openRaw(\'letter\')">Open in tab (print / save PDF)</button>';
+          v.appendChild(bar);
+          const w = document.createElement('div');
+          w.className = 'doc-frame';
+          w.appendChild(frame(state.letter.html));
+          v.appendChild(w);
+        } else if (state.tab === 'post') {
+          const p = state.post;
+          if (!p || (!p.text && !p.html)) return void (v.innerHTML = '<p class="empty">No job post stored yet.</p>');
+          if (p.html) {
+            const w = document.createElement('div');
+            w.className = 'doc-frame';
+            w.appendChild(frame(p.html));
+            v.appendChild(w);
+          } else {
+            const c = document.createElement('div');
+            c.className = 'card';
+            c.innerHTML = '<div class="sub">source: ' + esc(p.source || 'agent') + '</div><pre class="post">' + esc(p.text) + '</pre>';
+            v.appendChild(c);
+          }
+        } else if (state.tab === 'fit') {
+          const f = d && d.fit;
+          if (!f) return void (v.innerHTML = '<p class="empty">Not scored yet.</p>');
+          const c = document.createElement('div');
+          c.className = 'card';
+          let h = '<div class="score">' + f.score + '<span style="font-size:16px;color:var(--muted)">/100</span></div>';
+          if (f.verdict) h += '<div class="verdict">' + esc(f.verdict) + '</div>';
+          if (d.version && f.basedOnVersion && f.basedOnVersion !== d.version)
+            h += '<div class="sub" style="margin-top:6px;color:var(--major)">⚠ scored against v' + f.basedOnVersion + ', CV is now v' + d.version + '</div>';
+          c.innerHTML = h;
+          v.appendChild(c);
+          if (f.gaps && f.gaps.length) {
+            const g = document.createElement('div');
+            g.className = 'card';
+            g.innerHTML = '<h3 style="margin:0 0 8px">Gaps</h3>' + f.gaps.map((x) =>
+              '<div class="gap"><span class="sev ' + esc(x.severity) + '">' + esc(x.severity) + '</span>' +
+              '<div class="req">' + esc(x.requirement) + '</div>' +
+              (x.why ? '<div class="sub">' + esc(x.why) + '</div>' : '') +
+              (x.fix ? '<div class="fix">→ ' + esc(x.fix) + '</div>' : '') + '</div>').join('');
+            v.appendChild(g);
+          }
+          if (f.strengths && f.strengths.length) {
+            const s = document.createElement('div');
+            s.className = 'card';
+            s.innerHTML = '<h3 style="margin:0 0 8px">Strengths</h3>' + f.strengths.map((x) =>
+              '<div class="strength"><div class="req">' + esc(x.requirement) + '</div>' +
+              (x.evidence ? '<div class="sub">' + esc(x.evidence) + '</div>' : '') + '</div>').join('');
+            v.appendChild(s);
+          }
+        } else if (state.tab === 'review') {
+          renderReview(v);
+        } else if (state.tab === 'apps') {
+          const rows = state.apps || [];
+          if (!rows.length) return void (v.innerHTML = '<p class="empty">No applications tracked yet.</p>');
+          const c = document.createElement('div');
+          c.className = 'card';
+          c.innerHTML = '<table><thead><tr><th>Company</th><th>Role</th><th>CV</th><th>Fit</th><th>Status</th></tr></thead><tbody>' +
+            rows.map((r) => {
+              const st = (r.application && r.application.status) || 'drafting';
+              return '<tr><td>' + esc(r.company) + '</td><td>' + esc(r.jobTitle) + '</td><td>v' + (r.cvVersion || 0) +
+                '</td><td>' + (r.fitScore == null ? '–' : r.fitScore) + '</td><td><span class="tag ' + esc(st) + '">' + esc(st) + '</span></td></tr>';
+            }).join('') + '</tbody></table>';
+          v.appendChild(c);
+        }
+      }
+
+      function renderReview(v) {
+        const p = state.doc && state.doc.proposal;
+        if (!p) return void (v.innerHTML = '<p class="empty">No pending change proposal.</p>');
+        const c = document.createElement('div');
+        c.className = 'card';
+        c.innerHTML = '<h3 style="margin:0 0 4px">Proposed changes</h3><div class="sub">' + esc(p.summary || '') + '</div>';
+        (p.changes || []).forEach((ch) => {
+          const id = ch.id || ch.section;
+          const box = document.createElement('div');
+          box.className = 'gap';
+          box.innerHTML = '<div class="req">' + esc(ch.section) + '</div>' +
+            (ch.why ? '<div class="sub">' + esc(ch.why) + '</div>' : '') +
+            '<div class="sub" style="margin:4px 0"><b>now:</b> ' + esc(ch.current) + '</div>';
+          (ch.options || []).forEach((o) => {
+            const el = document.createElement('div');
+            el.className = 'opt' + (state.picks[id] === o.id ? ' picked' : '');
+            el.innerHTML = '<div class="label">' + esc(o.label) + '</div><div>' + esc(o.text) + '</div>';
+            el.onclick = () => { state.picks[id] = o.id; render(); };
+            box.appendChild(el);
+          });
+          const skip = document.createElement('div');
+          skip.className = 'opt' + (state.picks[id] === 'skip' ? ' picked' : '');
+          skip.innerHTML = '<div class="label">Skip — keep current</div>';
+          skip.onclick = () => { state.picks[id] = 'skip'; render(); };
+          box.appendChild(skip);
+          c.appendChild(box);
+        });
+        const relay = (p.changes || [])
+          .map((ch) => {
+            const id = ch.id || ch.section;
+            const pick = state.picks[id];
+            if (!pick) return '  ' + (id) + ': (not decided)';
+            if (pick === 'skip') return '  ' + id + ': SKIP';
+            const o = (ch.options || []).find((x) => x.id === pick);
+            return '  ' + id + ': use "' + (o ? o.label : pick) + '"';
+          })
+          .join('\n');
+        const r = document.createElement('div');
+        r.className = 'relay';
+        r.textContent = 'Tell your assistant:\n\nApply proposal ' + (p.id || '') + ':\n' + relay;
+        c.appendChild(r);
+        const bar = document.createElement('div');
+        bar.className = 'toolbar';
+        bar.style.marginTop = '10px';
+        bar.innerHTML = '<button class="act primary" id="relay-copy">Copy the message</button>' +
+          '<button class="act" id="relay-clear">Dismiss this panel</button>';
+        c.appendChild(bar);
+        v.appendChild(c);
+        document.getElementById('relay-copy').onclick = () => navigator.clipboard && navigator.clipboard.writeText(r.textContent);
+        document.getElementById('relay-clear').onclick = async () => {
+          await fetch('/jobcv/proposal/decision', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ sessionId: SESSION }),
+          });
+        };
+      }
+
+      window.openRaw = (kind) => {
+        const d = state.doc;
+        const html = kind === 'letter' ? (state.letter && state.letter.html) : (d && d.html);
+        if (!html) return;
+        const w = window.open('', '_blank');
+        w.document.write(html);
+        w.document.close();
+      };
+
+      connect();
+      poll();
+      setInterval(poll, 3000);
+    </script>
+  </body>
+</html>
