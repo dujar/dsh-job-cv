@@ -135,6 +135,47 @@ automatically, append `"dsh-job-cv"` to that array in
 Both halves mount on their next boot: the host routes and the `job` preset
 seed at startup, the client bundle on page refresh.
 
+## Also an MCP server
+
+The same workflow runs as a [Model Context Protocol](https://modelcontextprotocol.io)
+server for any MCP client (Claude Code, Claude Desktop, Cline…), with its own
+live preview page so you watch the CV render exactly as you would inside the
+harness. The DSH plugin is unaffected — both shells read and write the same
+state under `$DSH_HOME/dsh-job-cv`, so an application opened in one shows up
+in the other.
+
+```sh
+# from a checkout
+claude mcp add job-cv -- node /abs/path/to/dsh-job-cv/bin/dsh-job-cv-mcp.js \
+  --root ~/where/your/candidacy/folders/live
+
+# or, once published
+claude mcp add job-cv -- npx -y dsh-job-cv-mcp --root ~/job_candidatures
+```
+
+On start it prints a `preview:` URL on stderr and every `jobcv_context` call
+returns it — open it in a browser and keep it beside the conversation. `--root`
+(or `$DSH_JOB_CV_ROOT`) sets where candidacy folders are written; it defaults
+to `$DSH_HOME/dsh-job-cv/applications`. The session id is the server's — minted
+once, remembered in `$DSH_HOME/dsh-job-cv/mcp-session.json`, injected into every
+call — so there is no id to copy and nothing to get wrong. `--fresh` starts a
+new one.
+
+**Tools** (each a thin typed wrapper over the same `/jobcv/*` routes):
+`jobcv_context` · `jobcv_open` · `jobcv_get` · `jobcv_save_cv` ·
+`jobcv_save_letter` · `jobcv_save_master` · `jobcv_set_post` · `jobcv_set_brief` ·
+`jobcv_score` · `jobcv_propose` · `jobcv_switch` · `jobcv_set_status` ·
+`jobcv_restore` · `jobcv_load_joblist`. **Resources:** `jobcv://skill` (the full
+contract) and `jobcv://context`.
+
+Reading the post is the client's job in this shell — there is no fetch tool
+inside the server. Fetch the posting with the client's own web tool, then
+`jobcv_set_post` the readable text.
+
+One rough edge: a `jobcv_propose` decision has no chat back-channel here, so the
+preview's Review tab shows a copy-paste message ("Apply proposal p3: c1 → …") to
+hand back to the assistant.
+
 ## Usage
 
 1. Start a new session in **Job mode** (preset chip / Settings roster).

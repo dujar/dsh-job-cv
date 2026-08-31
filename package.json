@@ -4,12 +4,18 @@
   "version": "0.1.0",
   "type": "module",
   "main": "lib/index.js",
+  "bin": {
+    "dsh-job-cv-mcp": "./bin/dsh-job-cv-mcp.js"
+  },
   "exports": {
     ".": {
       "default": "./lib/index.js"
     },
     "./client": {
       "default": "./lib/client.js"
+    },
+    "./mcp": {
+      "default": "./lib/mcp/server.js"
     },
     "./package.json": "./package.json"
   },
@@ -27,12 +33,15 @@
   },
   "files": [
     "lib",
+    "bin",
     "cordis.patch.yml"
   ],
   "keywords": [
     "dsh",
     "dsh-plugin",
     "deepseek-harness",
+    "mcp",
+    "model-context-protocol",
     "cv",
     "resume",
     "job-mode",
@@ -53,8 +62,8 @@
     "test": "npm run lint && npm run format:check && node scripts/build-client.js --check && for f in test/*.test.mjs; do node \"$f\" || exit 1; done",
     "build:client": "node scripts/build-client.js",
     "lint": "eslint .",
-    "format": "prettier --write 'lib/**/*.js' 'test/*.mjs' 'scripts/*.js' '*.md' '*.json' '!package-lock.json'",
-    "format:check": "prettier --check 'lib/**/*.js' 'test/*.mjs' 'scripts/*.js' '*.md' '*.json' '!package-lock.json'"
+    "format": "prettier --write 'lib/**/*.js' 'bin/*.js' 'test/*.mjs' 'scripts/*.js' '*.md' '*.json' '!package-lock.json'",
+    "format:check": "prettier --check 'lib/**/*.js' 'bin/*.js' 'test/*.mjs' 'scripts/*.js' '*.md' '*.json' '!package-lock.json'"
   },
   "devDependencies": {
     "eslint": "^9.39.5",
