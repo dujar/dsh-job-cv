@@ -62,11 +62,13 @@
     "test": "npm run lint && npm run format:check && node scripts/build-client.js --check && for f in test/*.test.mjs; do node \"$f\" || exit 1; done",
     "build:client": "node scripts/build-client.js",
     "lint": "eslint .",
-    "format": "prettier --write 'lib/**/*.js' 'bin/*.js' 'test/*.mjs' 'scripts/*.js' '*.md' '*.json' '!package-lock.json'",
-    "format:check": "prettier --check 'lib/**/*.js' 'bin/*.js' 'test/*.mjs' 'scripts/*.js' '*.md' '*.json' '!package-lock.json'"
+    "format": "prettier --write 'lib/**/*.js' 'bin/*.js' 'test/*.mjs' 'scripts/*.js' '**/*.md' '*.json' 'tsconfig.json' '!package-lock.json' '!node_modules/**'",
+    "format:check": "prettier --check 'lib/**/*.js' 'bin/*.js' 'test/*.mjs' 'scripts/*.js' '**/*.md' '*.json' 'tsconfig.json' '!package-lock.json' '!node_modules/**'"
   },
   "devDependencies": {
+    "@types/node": "^22.20.1",
     "eslint": "^9.39.5",
-    "prettier": "^3.9.6"
+    "prettier": "^3.9.6",
+    "typescript": "^5.9.3"
   }
 }
