@@ -5,396 +5,992 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Job CV — preview</title>
     <style>
+      /* ---- theme: light is the base; dark redefines the same tokens ---- */
       :root {
         --bg: #f4f4f5;
         --panel: #ffffff;
+        --panel-2: #fafafa;
         --ink: #18181b;
+        --ink-soft: #3f3f46;
         --muted: #71717a;
         --line: #e4e4e7;
+        --line-2: #d4d4d8;
         --accent: #2563eb;
+        --accent-soft: #eff6ff;
         --blocker: #dc2626;
-        --major: #d97706;
-        --minor: #65a30d;
+        --major: #b45309;
+        --minor: #4d7c0f;
+        --ok: #15803d;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.06);
       }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --bg: #0d0d0f;
+          --panel: #17171a;
+          --panel-2: #1d1d21;
+          --ink: #f4f4f5;
+          --ink-soft: #d4d4d8;
+          --muted: #9b9ba3;
+          --line: #2a2a30;
+          --line-2: #3a3a42;
+          --accent: #6ea8ff;
+          --accent-soft: #17233a;
+          --blocker: #f87171;
+          --major: #fbbf24;
+          --minor: #a3e635;
+          --ok: #4ade80;
+          --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+        }
+      }
+      :root[data-theme='dark'] {
+        --bg: #0d0d0f;
+        --panel: #17171a;
+        --panel-2: #1d1d21;
+        --ink: #f4f4f5;
+        --ink-soft: #d4d4d8;
+        --muted: #9b9ba3;
+        --line: #2a2a30;
+        --line-2: #3a3a42;
+        --accent: #6ea8ff;
+        --accent-soft: #17233a;
+        --blocker: #f87171;
+        --major: #fbbf24;
+        --minor: #a3e635;
+        --ok: #4ade80;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+      }
+
       * { box-sizing: border-box; }
       html, body { margin: 0; height: 100%; }
       body {
         background: var(--bg);
         color: var(--ink);
-        font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        font: 14px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
         display: flex;
         flex-direction: column;
       }
+
+      /* ---- header ---- */
       header {
         background: var(--panel);
         border-bottom: 1px solid var(--line);
-        padding: 10px 16px;
-        display: flex;
-        align-items: baseline;
-        gap: 14px;
-        flex-wrap: wrap;
+        padding: 9px 16px 8px;
       }
-      header h1 { font-size: 14px; margin: 0; font-weight: 700; }
-      header .meta { color: var(--muted); font-size: 12px; }
-      header .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #a1a1aa; margin-right: 5px; }
-      header .dot.live { background: #16a34a; }
-      nav { display: flex; gap: 2px; padding: 0 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+      .h-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+      .h-top h1 { font-size: 13px; margin: 0; font-weight: 700; letter-spacing: 0.01em; }
+      .h-title { font-size: 13px; font-weight: 600; color: var(--ink); }
+      .h-title a { color: var(--muted); text-decoration: none; margin-left: 6px; font-weight: 400; }
+      .h-title a:hover { color: var(--accent); }
+      .h-spacer { flex: 1; }
+      .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+      .dot.live { background: var(--ok); }
+      .dot.snap { background: var(--major); }
+      .h-live { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 12px; }
+      .h-metrics {
+        display: flex; gap: 6px 14px; flex-wrap: wrap; margin-top: 6px;
+        color: var(--muted); font-size: 12px; align-items: center;
+      }
+      .h-metrics b { color: var(--ink-soft); font-weight: 600; }
+      .pill {
+        display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px;
+        font-size: 11px; font-weight: 600; background: var(--line); color: var(--ink-soft);
+      }
+      .pill.applied { background: var(--accent-soft); color: var(--accent); }
+      .pill.interview { background: color-mix(in srgb, var(--major) 22%, transparent); color: var(--major); }
+      .pill.offer { background: color-mix(in srgb, var(--ok) 22%, transparent); color: var(--ok); }
+      .pill.rejected { background: color-mix(in srgb, var(--blocker) 18%, transparent); color: var(--blocker); }
+      .band-strong { color: var(--ok); }
+      .band-solid { color: var(--minor); }
+      .band-partial { color: var(--major); }
+      .band-thin { color: var(--blocker); }
+
+      /* ---- tabs ---- */
+      nav { display: flex; gap: 2px; padding: 0 12px; background: var(--panel); border-bottom: 1px solid var(--line); overflow-x: auto; }
       nav button {
-        appearance: none; border: 0; background: transparent; cursor: pointer;
-        padding: 9px 14px; font: inherit; color: var(--muted);
-        border-bottom: 2px solid transparent;
+        appearance: none; border: 0; background: transparent; cursor: pointer; white-space: nowrap;
+        padding: 9px 13px; font: inherit; color: var(--muted); border-bottom: 2px solid transparent;
       }
+      nav button:hover { color: var(--ink-soft); }
       nav button.active { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
       nav button .badge {
-        display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 6px;
-        border-radius: 9px; background: var(--line); color: var(--ink);
+        display: inline-block; min-width: 17px; padding: 0 5px; margin-left: 5px;
+        border-radius: 9px; background: var(--line); color: var(--ink-soft);
         font-size: 11px; font-weight: 600; text-align: center;
       }
+      nav button .badge.alert { background: var(--blocker); color: #fff; }
+
       main { flex: 1; overflow: auto; padding: 16px; }
+      .wrap { max-width: 920px; margin: 0 auto; }
       .doc-frame {
-        width: 100%; max-width: 900px; margin: 0 auto; background: #fff;
-        border: 1px solid var(--line); border-radius: 4px; min-height: 60vh;
+        width: 100%; max-width: 920px; margin: 0 auto; background: #fff;
+        border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow); overflow: hidden;
       }
-      iframe { width: 100%; border: 0; display: block; border-radius: 4px; min-height: 80vh; }
+      iframe { width: 100%; border: 0; display: block; min-height: 80vh; background: #fff; }
       .card {
-        background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
-        padding: 16px; max-width: 900px; margin: 0 auto 14px;
+        background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+        padding: 15px 16px; max-width: 920px; margin: 0 auto 14px; box-shadow: var(--shadow);
       }
-      .empty { color: var(--muted); text-align: center; padding: 40px 0; }
-      .score { font-size: 40px; font-weight: 800; line-height: 1; }
-      .verdict { color: var(--muted); margin-top: 6px; }
+      .card h3 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+      .empty { color: var(--muted); text-align: center; padding: 44px 0; }
+      .empty .act { margin-top: 12px; }
+
+      .score { font-size: 44px; font-weight: 800; line-height: 1; }
+      .score span { font-size: 16px; color: var(--muted); font-weight: 600; }
+      .verdict { color: var(--ink-soft); margin-top: 8px; max-width: 62ch; }
+      .kv { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+      .kv b { color: var(--ink-soft); font-weight: 600; }
+
+      .grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;
+      }
+      .stat {
+        border: 1px solid var(--line); border-radius: 7px; padding: 10px 12px; background: var(--panel-2);
+      }
+      .stat .n { font-size: 20px; font-weight: 700; }
+      .stat .l { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+      .stat.yes .n { color: var(--ok); }
+      .stat.no .n { color: var(--muted); }
+
       .gap, .strength { border-top: 1px solid var(--line); padding: 10px 0; }
       .gap:first-of-type, .strength:first-of-type { border-top: 0; }
-      .tagrow { display: flex; gap: 6px; align-items: center; margin-bottom: 2px; }
+      .tagrow { display: flex; gap: 6px; align-items: center; margin-bottom: 3px; flex-wrap: wrap; }
       .sev { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
       .sev.blocker { color: var(--blocker); }
       .sev.major { color: var(--major); }
       .sev.minor { color: var(--minor); }
-      .kindtag { display: inline-block; font-size: 10px; letter-spacing: 0.02em; color: var(--muted);
-        border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; line-height: 15px; }
+      .kindtag {
+        display: inline-block; font-size: 10px; letter-spacing: 0.02em; color: var(--muted);
+        border: 1px solid var(--line-2); border-radius: 4px; padding: 0 5px; line-height: 15px;
+      }
       .req { font-weight: 600; margin: 2px 0; }
       .sub { color: var(--muted); font-size: 13px; }
-      .fix { font-size: 13px; margin-top: 4px; }
+      .fix { font-size: 13px; margin-top: 4px; color: var(--accent); }
+
       pre.post { white-space: pre-wrap; word-wrap: break-word; font: 13px/1.6 ui-monospace, monospace; margin: 0; }
       table { border-collapse: collapse; width: 100%; }
-      th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); font-size: 13px; }
-      th { color: var(--muted); font-weight: 600; }
-      .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; background: var(--line); }
-      .tag.applied { background: #dbeafe; color: #1e40af; }
-      .tag.interview { background: #fef3c7; color: #92400e; }
-      .tag.offer { background: #dcfce7; color: #166534; }
-      .tag.rejected { background: #fee2e2; color: #991b1b; }
-      .opt { border: 1px solid var(--line); border-radius: 5px; padding: 8px 10px; margin: 5px 0; cursor: pointer; }
-      .opt.picked { border-color: var(--accent); background: #eff6ff; }
-      .opt .label { font-weight: 600; font-size: 12px; }
-      .relay { background: #f8fafc; border: 1px dashed var(--line); border-radius: 5px; padding: 10px; margin-top: 10px; font: 12px/1.5 ui-monospace, monospace; white-space: pre-wrap; }
-      button.act { appearance: none; border: 1px solid var(--line); background: #fff; border-radius: 5px; padding: 6px 12px; font: inherit; cursor: pointer; }
+      th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); font-size: 13px; }
+      th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+      tr.current td { background: var(--accent-soft); }
+      td.num { font-variant-numeric: tabular-nums; }
+
+      .opt { border: 1px solid var(--line-2); border-radius: 6px; padding: 8px 10px; margin: 6px 0; cursor: pointer; }
+      .opt:hover { border-color: var(--muted); }
+      .opt.picked { border-color: var(--accent); background: var(--accent-soft); }
+      .opt .label { font-weight: 600; font-size: 12px; margin-bottom: 2px; }
+      .relay {
+        background: var(--panel-2); border: 1px dashed var(--line-2); border-radius: 6px;
+        padding: 10px; margin-top: 12px; font: 12px/1.5 ui-monospace, monospace; white-space: pre-wrap;
+      }
+
+      button.act, select.act {
+        appearance: none; border: 1px solid var(--line-2); background: var(--panel); color: var(--ink);
+        border-radius: 6px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer;
+      }
+      button.act:hover { border-color: var(--muted); }
       button.act.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-      .toolbar { max-width: 900px; margin: 0 auto 12px; display: flex; gap: 8px; }
+      button.act.small { padding: 3px 9px; font-size: 12px; }
+      button.act:disabled { opacity: 0.5; cursor: default; }
+      .toolbar { max-width: 920px; margin: 0 auto 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+      .toolbar .sp { flex: 1; }
+
+      .req-item {
+        border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 6px;
+        padding: 9px 11px; margin-bottom: 8px; background: var(--panel-2);
+      }
+      .req-item .k { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--accent); font-weight: 700; }
+      .req-item .s { margin-top: 2px; }
+
+      /* ---- applications drawer (a discreet button opens it) ---- */
+      #apps-scrim {
+        position: fixed; inset: 0; background: rgba(0, 0, 0, 0.35); z-index: 40;
+        opacity: 0; pointer-events: none; transition: opacity 0.15s;
+      }
+      #apps-scrim.open { opacity: 1; pointer-events: auto; }
+      #apps-drawer {
+        position: fixed; top: 0; left: 0; bottom: 0; width: 340px; max-width: 86vw; z-index: 41;
+        background: var(--panel); border-right: 1px solid var(--line);
+        transform: translateX(-100%); transition: transform 0.16s ease;
+        display: flex; flex-direction: column;
+      }
+      #apps-drawer.open { transform: none; box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25); }
+      #apps-drawer .d-head { padding: 12px 14px 8px; border-bottom: 1px solid var(--line); }
+      #apps-drawer .d-head .row1 { display: flex; align-items: center; gap: 8px; }
+      #apps-drawer .d-head h2 { font-size: 13px; margin: 0; font-weight: 700; }
+      #apps-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+      #apps-list { flex: 1; overflow-y: auto; overflow-x: hidden; position: relative; }
+      #apps-spacer { position: relative; width: 100%; }
+      .app-row {
+        position: absolute; left: 0; right: 0; height: 66px; padding: 8px 14px;
+        border-bottom: 1px solid var(--line); cursor: pointer; overflow: hidden;
+      }
+      .app-row:hover { background: var(--panel-2); }
+      .app-row.current { background: var(--accent-soft); }
+      .app-row .co { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .app-row .ro { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .app-row .meta { display: flex; align-items: center; gap: 8px; margin-top: 3px; font-size: 11px; color: var(--muted); }
+      .app-row .meta .fit { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+      dialog {
+        border: 1px solid var(--line-2); border-radius: 10px; background: var(--panel); color: var(--ink);
+        padding: 0; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); max-width: 460px; width: 92vw;
+      }
+      dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+      .dlg-body { padding: 16px 18px; }
+      .dlg-body h3 { margin: 0 0 4px; font-size: 15px; }
+      .dlg-body textarea, .dlg-body input {
+        width: 100%; margin-top: 8px; padding: 8px 10px; border: 1px solid var(--line-2);
+        border-radius: 6px; background: var(--panel-2); color: var(--ink); font: inherit; resize: vertical;
+      }
+      .dlg-foot { display: flex; gap: 8px; justify-content: flex-end; padding: 12px 18px; border-top: 1px solid var(--line); }
+      .marked-current { font-size: 12px; color: var(--muted); background: var(--panel-2); border-radius: 5px; padding: 6px 8px; margin-top: 8px; max-height: 120px; overflow: auto; }
     </style>
   </head>
   <body>
     <header>
-      <h1>Job CV — live preview</h1>
-      <span class="meta" id="meta-active">no active candidacy</span>
-      <span class="meta"><span class="dot" id="live-dot"></span><span id="live-text">connecting…</span></span>
-      <span class="meta" id="meta-session"></span>
+      <div class="h-top">
+        <button class="act small" id="apps-btn" title="Your applications">☰ <span id="apps-btn-n">0</span></button>
+        <h1>Job&nbsp;CV</h1>
+        <span class="h-title" id="h-title">no active candidacy</span>
+        <span class="h-spacer"></span>
+        <span class="h-live"><span class="dot" id="live-dot"></span><span id="live-text">connecting…</span></span>
+        <button class="act small" id="theme-btn" title="Light / dark / system">◐ theme</button>
+      </div>
+      <div class="h-metrics" id="h-metrics"></div>
     </header>
     <nav id="tabs">
-      <button data-tab="cv" class="active">CV <span class="badge" id="b-cv">0</span></button>
-      <button data-tab="letter">Letter <span class="badge" id="b-letter">0</span></button>
-      <button data-tab="post">Post</button>
+      <button data-tab="overview" class="active">Overview</button>
+      <button data-tab="cv">CV <span class="badge" id="b-cv">0</span></button>
+      <button data-tab="letter">Letter <span class="badge" id="b-letter">–</span></button>
+      <button data-tab="post">Post <span class="badge" id="b-post">–</span></button>
       <button data-tab="fit">Fit <span class="badge" id="b-fit">–</span></button>
       <button data-tab="review">Review <span class="badge" id="b-review">0</span></button>
-      <button data-tab="apps">Applications</button>
     </nav>
-    <main id="view"></main>
+    <main><div id="view"></div></main>
+
+    <div id="apps-scrim"></div>
+    <aside id="apps-drawer">
+      <div class="d-head">
+        <div class="row1">
+          <h2>Applications <span class="sub" id="apps-total"></span></h2>
+          <span class="h-spacer"></span>
+          <button class="act small" id="apps-close">✕</button>
+        </div>
+        <div id="apps-chips"></div>
+      </div>
+      <div id="apps-list"><div id="apps-spacer"></div></div>
+    </aside>
+
+    <dialog id="dlg">
+      <form method="dialog" class="dlg-body" id="dlg-form">
+        <h3 id="dlg-title"></h3>
+        <div class="sub" id="dlg-sub"></div>
+        <div class="marked-current" id="dlg-current" hidden></div>
+        <textarea id="dlg-input" rows="3"></textarea>
+      </form>
+      <div class="dlg-foot">
+        <button class="act" id="dlg-cancel" type="button">Cancel</button>
+        <button class="act primary" id="dlg-send" type="button">Send to assistant</button>
+      </div>
+    </dialog>
 
     <script>
       const SESSION = __JOBCV_SESSION__;
-      document.getElementById('meta-session').textContent = 'session ' + SESSION;
       const q = (s) => '?session=' + encodeURIComponent(SESSION) + (s || '');
-      const TABS = ['cv', 'letter', 'post', 'fit', 'review', 'apps'];
-      // Deep-linkable: /?tab=fit opens that tab, and switching tabs updates the
-      // URL so a reload or a shared link lands in the same place.
+      const TABS = ['overview', 'cv', 'letter', 'post', 'fit', 'review'];
       const wanted = new URLSearchParams(location.search).get('tab');
-      const state = {
-        doc: null,
-        letter: null,
-        post: null,
-        apps: null,
-        tab: TABS.includes(wanted) ? wanted : 'cv',
-        picks: {},
-      };
+      const LIVE = new URLSearchParams(location.search).get('live') !== '0';
+      const state = { doc: null, letter: null, post: null, brief: null, apps: null, requests: [], tab: TABS.includes(wanted) ? wanted : 'overview', picks: {}, marking: false };
+      const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+      const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 
+      /* ---------------------------------------------------------------- theme */
+      const THEMES = ['system', 'light', 'dark'];
+      let theme = 'system';
+      try { theme = localStorage.getItem('jobcv-theme') || 'system'; } catch (e) {}
+      // ?theme=light|dark|system wins (deep-linking / embedding a look).
+      const themeParam = new URLSearchParams(location.search).get('theme');
+      if (THEMES.includes(themeParam)) theme = themeParam;
+      function applyTheme() {
+        if (theme === 'system') document.documentElement.removeAttribute('data-theme');
+        else document.documentElement.setAttribute('data-theme', theme);
+        document.getElementById('theme-btn').textContent =
+          theme === 'system' ? '◐ system' : theme === 'light' ? '☀ light' : '☾ dark';
+        try { localStorage.setItem('jobcv-theme', theme); } catch (e) {}
+      }
+      document.getElementById('theme-btn').onclick = () => {
+        theme = THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length];
+        applyTheme();
+      };
+      applyTheme();
+
+      /* ---------------------------------------------------------------- tabs */
       function selectTab(tab) {
         if (!TABS.includes(tab)) return;
         state.tab = tab;
-        for (const el of document.querySelectorAll('nav button')) {
-          el.classList.toggle('active', el.dataset.tab === tab);
-        }
-        try {
-          const u = new URL(location.href);
-          u.searchParams.set('tab', tab);
-          history.replaceState(null, '', u);
-        } catch (e) {}
+        for (const b of document.querySelectorAll('nav button')) b.classList.toggle('active', b.dataset.tab === tab);
+        try { const u = new URL(location.href); u.searchParams.set('tab', tab); history.replaceState(null, '', u); } catch (e) {}
         render();
       }
-
-      /* ---- tabs ---- */
       document.getElementById('tabs').addEventListener('click', (e) => {
         const b = e.target.closest('button[data-tab]');
         if (b) selectTab(b.dataset.tab);
       });
-      selectTab(state.tab);
 
-      /* ---- data ---- */
+      /* ---------------------------------------------------------------- bands */
+      function fitBand(s) {
+        if (s >= 80) return { key: 'strong', label: 'clears the screen' };
+        if (s >= 60) return { key: 'solid', label: 'one framing risk' };
+        if (s >= 40) return { key: 'partial', label: 'a real gap' };
+        return { key: 'thin', label: 'wrong role or level' };
+      }
+      const ago = (t) => {
+        if (!t) return '';
+        const s = Math.round((Date.now() - t) / 1000);
+        if (s < 60) return s + 's ago';
+        if (s < 3600) return Math.round(s / 60) + 'm ago';
+        if (s < 86400) return Math.round(s / 3600) + 'h ago';
+        return Math.round(s / 86400) + 'd ago';
+      };
+
+      /* ---------------------------------------------------------------- data */
       function applyDoc(doc) {
         state.doc = doc;
+        state.requests = Array.isArray(doc && doc.requests) ? doc.requests : [];
         const dot = document.getElementById('live-dot');
-        const txt = document.getElementById('live-text');
-        dot.classList.add('live');
-        txt.textContent = 'live';
-        const a = doc && (doc.company || doc.jobTitle)
-          ? [doc.company, doc.jobTitle].filter(Boolean).join(' — ')
-          : (doc && doc.jobUrl) || 'no active candidacy';
-        document.getElementById('meta-active').textContent = a;
-        document.getElementById('b-cv').textContent = 'v' + ((doc && doc.version) || 0);
-        document.getElementById('b-letter').textContent = doc && doc.letter ? 'v' + doc.letter.version : '0';
-        document.getElementById('b-fit').textContent = doc && doc.fit ? doc.fit.score : '–';
-        document.getElementById('b-review').textContent = doc && doc.proposal ? doc.proposal.changes.length : '0';
+        dot.className = 'dot ' + (LIVE ? 'live' : 'snap');
+        document.getElementById('live-text').textContent = LIVE ? 'live' : 'snapshot';
+        renderHeader();
         render();
+      }
+
+      function renderHeader() {
+        const d = state.doc || {};
+        const t = document.getElementById('h-title');
+        const name = [d.company, d.jobTitle].filter(Boolean).join(' — ') || d.jobUrl || 'no active candidacy';
+        t.innerHTML = esc(name) + (d.jobUrl ? ' <a href="' + esc(d.jobUrl) + '" target="_blank" rel="noopener">↗</a>' : '');
+
+        const m = document.getElementById('h-metrics');
+        const parts = [];
+        parts.push('<span><b>CV</b> v' + (d.version || 0) + '</span>');
+        parts.push('<span><b>Letter</b> ' + (d.letter ? 'v' + d.letter.version : '—') + '</span>');
+        if (d.fit) {
+          const b = fitBand(d.fit.score);
+          parts.push('<span><b>Fit</b> <span class="band-' + b.key + '">' + d.fit.score + '</span>' +
+            (fitStale(d) ? ' <span style="color:var(--major)">· stale</span>' : '') + '</span>');
+        } else parts.push('<span><b>Fit</b> —</span>');
+        const st = d.status || 'drafting';
+        parts.push('<span class="pill ' + st + '">' + st + '</span>');
+        if (d.updatedAt) parts.push('<span>updated ' + ago(d.updatedAt) + '</span>');
+        if (d.masterVersion) parts.push('<span><b>Master</b> v' + d.masterVersion + '</span>');
+        m.innerHTML = parts.join('');
+
+        document.getElementById('b-cv').textContent = 'v' + (d.version || 0);
+        document.getElementById('b-letter').textContent = d.letter ? 'v' + d.letter.version : '–';
+        document.getElementById('b-post').textContent = d.postChars ? '✓' : '–';
+        document.getElementById('b-fit').textContent = d.fit ? d.fit.score : '–';
+        const rb = document.getElementById('b-review');
+        rb.textContent = d.proposal ? d.proposal.changes.length : '0';
+        document.getElementById('apps-btn-n').textContent = (state.apps || []).length;
+        // pending requests badge on Overview
+        let ob = document.querySelector('nav button[data-tab="overview"] .badge');
+        if (!ob) {
+          ob = el('span', 'badge');
+          document.querySelector('nav button[data-tab="overview"]').appendChild(document.createTextNode(' '));
+          document.querySelector('nav button[data-tab="overview"]').appendChild(ob);
+        }
+        ob.textContent = state.requests.length;
+        ob.className = 'badge' + (state.requests.length ? ' alert' : '');
+        ob.style.display = state.requests.length ? '' : 'none';
+      }
+
+      function fitStale(d) {
+        if (!d || !d.fit) return false;
+        const lv = d.letter ? d.letter.version : 0;
+        return d.fit.basedOnVersion !== d.version || d.fit.basedOnLetter !== lv;
       }
 
       async function poll() {
         try {
-          const [letter, post, apps] = await Promise.all([
+          const [letter, post, brief, apps] = await Promise.all([
             fetch('/jobcv/letter' + q()).then((r) => r.json()).catch(() => null),
             fetch('/jobcv/post' + q()).then((r) => r.json()).catch(() => null),
+            fetch('/jobcv/brief' + q()).then((r) => r.json()).catch(() => null),
             fetch('/jobcv/applications' + q()).then((r) => r.json()).catch(() => null),
           ]);
           state.letter = letter && letter.letter ? letter.letter : null;
           state.post = post || null;
+          state.brief = brief && brief.brief ? brief.brief : null;
           state.apps = apps && apps.applications ? apps.applications : [];
-          if (['post', 'apps', 'letter'].includes(state.tab)) render();
+          renderHeader();
+          if (['overview', 'post', 'letter'].includes(state.tab)) render();
+          if (drawerOpen) renderAppsDrawer();
         } catch (e) {}
       }
 
       function connect() {
         const es = new EventSource('/jobcv/stream' + q());
-        es.onmessage = (e) => {
-          try { applyDoc(JSON.parse(e.data)); } catch (_) {}
-        };
+        es.onmessage = (e) => { try { applyDoc(JSON.parse(e.data)); } catch (_) {} };
         es.onerror = () => {
-          document.getElementById('live-dot').classList.remove('live');
+          document.getElementById('live-dot').className = 'dot';
           document.getElementById('live-text').textContent = 'reconnecting…';
         };
       }
-
-      // /?live=0 — one fetch, no open stream. For a headless capture (the SSE
-      // connection never goes idle, so it hangs a screenshotter) and anyone
-      // who just wants a snapshot.
       async function pollDocOnce() {
+        try { applyDoc(await fetch('/jobcv/doc' + q()).then((r) => r.json())); } catch (e) {}
+      }
+
+      /* ------------------------------------------------------ raising a request */
+      async function raise(kind, summary, detail) {
         try {
-          const doc = await fetch('/jobcv/doc' + q()).then((r) => r.json());
-          applyDoc(doc);
-          document.getElementById('live-dot').classList.remove('live');
-          document.getElementById('live-text').textContent = 'snapshot';
+          await fetch('/jobcv/request', {
+            method: 'POST', headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ sessionId: SESSION, kind, summary, detail: detail || {} }),
+          });
+          await pollDocOnce();
+        } catch (e) {}
+      }
+      async function dismissRequest(id) {
+        try {
+          await fetch('/jobcv/request/resolve', {
+            method: 'POST', headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ sessionId: SESSION, ids: [id] }),
+          });
+          await pollDocOnce();
         } catch (e) {}
       }
 
-      /* ---- rendering ---- */
-      const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+      /* a small prompt dialog → resolves to the entered text, or null */
+      const dlg = document.getElementById('dlg');
+      function ask(opts) {
+        return new Promise((resolve) => {
+          document.getElementById('dlg-title').textContent = opts.title;
+          document.getElementById('dlg-sub').textContent = opts.sub || '';
+          const cur = document.getElementById('dlg-current');
+          cur.hidden = !opts.current;
+          if (opts.current) cur.textContent = opts.current;
+          const input = document.getElementById('dlg-input');
+          input.value = '';
+          input.placeholder = opts.placeholder || '';
+          document.getElementById('dlg-send').textContent = opts.send || 'Send to assistant';
+          const done = (val) => { dlg.close(); resolve(val); };
+          document.getElementById('dlg-send').onclick = () => done(input.value.trim());
+          document.getElementById('dlg-cancel').onclick = () => done(null);
+          dlg.onclose = () => resolve(null);
+          dlg.showModal();
+          input.focus();
+        });
+      }
 
-      // The red gap convention, enforced here rather than by whatever the
-      // agent wrote — same rule as the DSH client. The iframe is fully
-      // sandboxed (no same-origin), so it goes into the srcdoc string.
+      /* --------------------------------------------------- direct route actions */
+      async function post(path, body) {
+        await fetch(path, {
+          method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(Object.assign({ sessionId: SESSION }, body)),
+        });
+        await Promise.all([pollDocOnce(), poll()]);
+      }
+
+      /* --------------------------------------------------------------- gap CSS */
       const GAP_CSS = '<style>' +
-        '.dsh-gap{color:#b3261e!important;background:rgba(179,38,30,.08)!important;' +
+        '.dsh-gap{color:#b3261e!important;background:rgba(179,38,30,.09)!important;' +
         'border-bottom:2px solid #b3261e!important;border-radius:2px;padding:0 1px}' +
         '.dsh-gap[data-dsh-gap="blocker"]{background:rgba(179,38,30,.16)!important;font-weight:600}' +
-        '.dsh-gap[data-dsh-gap="minor"]{border-bottom:1px dashed #b3261e!important;' +
-        'background:rgba(179,38,30,.04)!important}</style>';
-
-      function frame(html) {
-        const f = document.createElement('iframe');
-        f.setAttribute('sandbox', '');
+        '.dsh-gap[data-dsh-gap="minor"]{border-bottom:1px dashed #b3261e!important;background:rgba(179,38,30,.05)!important}' +
+        '[data-jc-mark]{outline:2px dashed var(--accent,#2563eb);outline-offset:2px;background:rgba(37,99,235,.08)}' +
+        'body.jc-marking *{cursor:crosshair!important}' +
+        'body.jc-marking p:hover,body.jc-marking li:hover,body.jc-marking h1:hover,body.jc-marking h2:hover,body.jc-marking h3:hover,body.jc-marking td:hover{background:rgba(37,99,235,.10)}' +
+        '</style>';
+      function withGapCss(html) {
         const s = String(html || '');
-        f.srcdoc = s.includes('</head>') ? s.replace('</head>', GAP_CSS + '</head>')
+        return s.includes('</head>') ? s.replace('</head>', GAP_CSS + '</head>')
           : s.includes('<body') ? s.replace(/(<body[^>]*>)/i, '$1' + GAP_CSS)
-          : GAP_CSS + s;
+            : GAP_CSS + s;
+      }
+      function frame(html, opts) {
+        const f = document.createElement('iframe');
+        // allow-same-origin (NO allow-scripts) so the parent can attach the
+        // mark-a-line listener; the document still cannot run scripts.
+        f.setAttribute('sandbox', opts && opts.pick ? 'allow-same-origin' : '');
+        f.srcdoc = withGapCss(html);
+        if (opts && opts.pick) {
+          f.addEventListener('load', () => attachPicking(f), { once: true });
+        }
         return f;
       }
 
+      /* ------------------------------------------------ mark a line on the CV */
+      function nearestHeading(node) {
+        let n = node;
+        while (n && n !== node.ownerDocument.body) {
+          let p = n.previousElementSibling;
+          while (p) {
+            if (/^H[1-4]$/.test(p.tagName)) return p.textContent.trim();
+            p = p.previousElementSibling;
+          }
+          n = n.parentElement;
+        }
+        return '';
+      }
+      function attachPicking(f) {
+        let idoc;
+        try { idoc = f.contentDocument; } catch (e) { return; }
+        if (!idoc || !idoc.body) return;
+        idoc.body.classList.toggle('jc-marking', state.marking);
+        idoc.body.onclick = async (ev) => {
+          if (!state.marking) return;
+          ev.preventDefault();
+          let t = ev.target;
+          while (t && t !== idoc.body && !/^(P|LI|H1|H2|H3|H4|TD|DIV|BLOCKQUOTE)$/.test(t.tagName)) t = t.parentElement;
+          if (!t || t === idoc.body) return;
+          const text = t.textContent.trim().replace(/\s+/g, ' ');
+          if (!text) return;
+          idoc.querySelectorAll('[data-jc-mark]').forEach((n) => n.removeAttribute('data-jc-mark'));
+          t.setAttribute('data-jc-mark', '');
+          const need = await ask({
+            title: 'What needs to change here?',
+            sub: 'The assistant gets the section, the current text and your note.',
+            current: text.slice(0, 400),
+            placeholder: 'e.g. "quantify this" or "this overstates my role"',
+          });
+          t.removeAttribute('data-jc-mark');
+          if (need) {
+            await raise('revise', 'Revise a line in the CV', {
+              section: nearestHeading(t), current: text, need: need,
+            });
+            state.marking = false;
+            render();
+          }
+        };
+      }
+
+      /* --------------------------------------------------------------- render */
       function render() {
         const v = document.getElementById('view');
         v.innerHTML = '';
+        const fn = ({ overview: rOverview, cv: rCv, letter: rLetter, post: rPost, fit: rFit, review: rReview })[state.tab];
+        if (fn) fn(v);
+      }
+
+      /* ---------------------------------------- applications drawer (virtual) */
+      let drawerOpen = false;
+      const ROW_H = 66;
+      const BUFFER = 6; // rows painted above/below the viewport
+      const scrim = document.getElementById('apps-scrim');
+      const drawer = document.getElementById('apps-drawer');
+      const listEl = document.getElementById('apps-list');
+      const spacer = document.getElementById('apps-spacer');
+      function openDrawer() {
+        drawerOpen = true;
+        scrim.classList.add('open');
+        drawer.classList.add('open');
+        renderAppsDrawer();
+      }
+      function closeDrawer() {
+        drawerOpen = false;
+        scrim.classList.remove('open');
+        drawer.classList.remove('open');
+      }
+      document.getElementById('apps-btn').onclick = () => (drawerOpen ? closeDrawer() : openDrawer());
+      document.getElementById('apps-close').onclick = closeDrawer;
+      scrim.onclick = closeDrawer;
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && drawerOpen) closeDrawer(); });
+
+      function sortedApps() {
+        return (state.apps || []).slice().sort((a, b) => {
+          const fb = (b.fitScore == null ? -1 : b.fitScore) - (a.fitScore == null ? -1 : a.fitScore);
+          return fb || (b.activity || 0) - (a.activity || 0);
+        });
+      }
+
+      function renderAppsDrawer() {
+        const rows = sortedApps();
+        document.getElementById('apps-total').textContent = '· ' + rows.length;
+        const counts = { drafting: 0, applied: 0, interview: 0, offer: 0, rejected: 0 };
+        rows.forEach((r) => { const s = (r.application && r.application.status) || 'drafting'; if (counts[s] != null) counts[s]++; });
+        document.getElementById('apps-chips').innerHTML = Object.keys(counts)
+          .filter((k) => counts[k]).map((k) => '<span class="pill ' + k + '">' + k + ' ' + counts[k] + '</span>').join('');
+        spacer.style.height = rows.length * ROW_H + 'px';
+        paintRows();
+      }
+
+      // Only the visible window (+ buffer) of rows is in the DOM; scrolling
+      // recycles them. spacer holds the full scroll height.
+      function paintRows() {
+        const rows = sortedApps();
+        const top = listEl.scrollTop;
+        const h = listEl.clientHeight || 400;
+        const first = Math.max(0, Math.floor(top / ROW_H) - BUFFER);
+        const last = Math.min(rows.length, Math.ceil((top + h) / ROW_H) + BUFFER);
+        const want = new Set();
+        for (let i = first; i < last; i++) want.add(i);
+        // drop rows that scrolled out
+        spacer.querySelectorAll('.app-row').forEach((elm) => {
+          if (!want.has(+elm.dataset.i)) elm.remove();
+        });
+        // add rows that scrolled in
+        const have = new Set([...spacer.querySelectorAll('.app-row')].map((e) => +e.dataset.i));
+        for (let i = first; i < last; i++) {
+          if (have.has(i)) continue;
+          spacer.appendChild(appRow(rows[i], i));
+        }
+      }
+      let painting = false;
+      listEl.addEventListener('scroll', () => {
+        if (painting) return;
+        painting = true;
+        requestAnimationFrame(() => { paintRows(); painting = false; });
+      });
+      window.addEventListener('resize', () => { if (drawerOpen) paintRows(); });
+
+      function appRow(r, i) {
+        const st = (r.application && r.application.status) || 'drafting';
+        const isCur = state.doc && r.jobUrl && r.jobUrl === state.doc.jobUrl;
+        const row = el('div', 'app-row' + (isCur ? ' current' : ''));
+        row.dataset.i = i;
+        row.style.top = i * ROW_H + 'px';
+        row.innerHTML =
+          '<div class="co">' + esc(r.company || '—') + (isCur ? ' <span class="sub">· active</span>' : '') + '</div>' +
+          '<div class="ro">' + esc(r.jobTitle || '—') + '</div>' +
+          '<div class="meta">' +
+          (r.fitScore != null ? '<span class="fit band-' + fitBand(r.fitScore).key + '">' + r.fitScore + '</span>' : '<span class="fit">—</span>') +
+          '<span>CV v' + (r.cvVersion || 0) + '</span>' +
+          (r.letterVersion ? '<span>L v' + r.letterVersion + '</span>' : '') +
+          '<span class="pill ' + st + '">' + st + '</span>' +
+          '</div>';
+        row.onclick = () => {
+          if (isCur) { closeDrawer(); return; }
+          if (r.jobUrl) post('/jobcv/switch', { jobUrl: r.jobUrl, company: r.company, jobTitle: r.jobTitle }).then(closeDrawer);
+        };
+        return row;
+      }
+
+      function requestsPanel() {
+        if (!state.requests.length) return null;
+        const c = el('div', 'card');
+        c.appendChild(el('h3', null, 'Pending — waiting for the assistant (' + state.requests.length + ')'));
+        state.requests.forEach((r) => {
+          const it = el('div', 'req-item');
+          it.innerHTML = '<div class="k">' + esc(r.kind) + '</div>' +
+            '<div class="s">' + esc(r.summary || r.kind) + '</div>' +
+            (r.detail && r.detail.need ? '<div class="sub">“' + esc(r.detail.need) + '”</div>' : '') +
+            (r.detail && r.detail.current ? '<div class="sub" style="margin-top:2px">on: ' + esc(r.detail.current.slice(0, 120)) + '</div>' : '');
+          const x = el('button', 'act small', 'Dismiss');
+          x.style.marginTop = '6px';
+          x.onclick = () => dismissRequest(r.id);
+          it.appendChild(x);
+          c.appendChild(it);
+        });
+        const hint = el('div', 'sub');
+        hint.style.marginTop = '6px';
+        hint.textContent = 'Your assistant sees these via jobcv_context. If it is idle, tell it to "check jobcv_context".';
+        c.appendChild(hint);
+        return c;
+      }
+
+      function rOverview(v) {
         const d = state.doc;
-        if (state.tab === 'cv') {
-          if (!d || !d.html) return void (v.innerHTML = '<p class="empty">No CV yet. Ask the assistant to open a candidacy and tailor your CV.</p>');
-          const bar = document.createElement('div');
-          bar.className = 'toolbar';
-          bar.innerHTML = '<button class="act" onclick="openRaw(\'cv\')">Open in tab (print / save PDF)</button>' +
-            (d.note ? '<span class="meta" style="align-self:center;color:var(--muted)">latest note: ' + esc(d.note) + '</span>' : '');
-          v.appendChild(bar);
-          const w = document.createElement('div');
-          w.className = 'doc-frame';
-          w.appendChild(frame(d.html));
+        const w = el('div', 'wrap');
+        if (!d || !d.workspace) {
+          w.innerHTML = '<div class="empty">No candidacy open yet.<br><span class="sub">Ask your assistant to open one against a job post.</span></div>';
           v.appendChild(w);
-        } else if (state.tab === 'letter') {
-          if (!state.letter) return void (v.innerHTML = '<p class="empty">No cover letter yet.</p>');
-          const bar = document.createElement('div');
-          bar.className = 'toolbar';
-          bar.innerHTML = '<button class="act" onclick="openRaw(\'letter\')">Open in tab (print / save PDF)</button>';
-          v.appendChild(bar);
-          const w = document.createElement('div');
-          w.className = 'doc-frame';
-          w.appendChild(frame(state.letter.html));
+          return;
+        }
+        // fit headline
+        const top = el('div', 'card');
+        if (d.fit) {
+          const b = fitBand(d.fit.score);
+          top.innerHTML =
+            '<div class="score band-' + b.key + '">' + d.fit.score + '<span>/100 · ' + b.label + '</span></div>' +
+            (d.fit.verdict ? '<div class="verdict">' + esc(d.fit.verdict) + '</div>' : '') +
+            (d.fit.decidedBy ? '<div class="kv"><b>Decided by</b> ' + esc(String(d.fit.decidedBy).replace('-', ' ')) + '</div>' : '') +
+            (d.fit.levelRead ? '<div class="kv"><b>Level</b> ' + esc(d.fit.levelRead.supports || '?') + ' evidenced, ' + esc(d.fit.levelRead.targets || '?') + ' targeted' + (d.fit.levelRead.gap ? ' — ' + esc(d.fit.levelRead.gap) : '') + '</div>' : '') +
+            (fitStale(d) ? '<div class="kv" style="color:var(--major)">Scored against v' + d.fit.basedOnVersion + ' — the document has moved.</div>' : '');
+          const rb = el('button', 'act small', fitStale(d) ? 'Ask to re-score' : 'Ask for a fresh score');
+          rb.style.marginTop = '10px';
+          rb.onclick = () => raise('rescore', 'Re-score the fit against the current CV');
+          top.appendChild(rb);
+        } else {
+          top.innerHTML = '<div class="score" style="color:var(--muted)">—<span>/100</span></div><div class="verdict">Not scored yet.</div>';
+          const rb = el('button', 'act primary', 'Ask to score the fit');
+          rb.style.marginTop = '10px';
+          rb.onclick = () => raise('rescore', 'Score my fit against this job post');
+          top.appendChild(rb);
+        }
+        w.appendChild(top);
+
+        // metric grid
+        const grid = el('div', 'card');
+        const f = d.fit || {};
+        const bl = (f.gaps || []).filter((g) => g.severity === 'blocker').length;
+        const mj = (f.gaps || []).filter((g) => g.severity === 'major').length;
+        const mn = (f.gaps || []).filter((g) => g.severity === 'minor').length;
+        const stat = (n, l, cls) => '<div class="stat ' + (cls || '') + '"><div class="n">' + n + '</div><div class="l">' + l + '</div></div>';
+        grid.innerHTML = '<h3>At a glance</h3><div class="grid">' +
+          stat((f.gaps || []).length, 'gaps', (f.gaps || []).length ? '' : 'yes') +
+          stat(bl + ' / ' + mj + ' / ' + mn, 'blk / maj / min') +
+          stat((f.strengths || []).length, 'strengths', 'yes') +
+          stat(d.postChars ? '✓' : '✗', 'job post', d.postChars ? 'yes' : 'no') +
+          stat(state.brief ? '✓' : '✗', 'breakdown', state.brief ? 'yes' : 'no') +
+          stat(d.letter ? 'v' + d.letter.version : '✗', 'cover letter', d.letter ? 'yes' : 'no') +
+          stat(d.masterVersion ? 'v' + d.masterVersion : '✗', 'master cv', d.masterVersion ? 'yes' : 'no') +
+          stat('v' + (d.version || 0), 'cv version') +
+          '</div>';
+        w.appendChild(grid);
+
+        // quick asks
+        const qa = el('div', 'card');
+        qa.appendChild(el('h3', null, 'Ask the assistant'));
+        const bar = el('div', 'toolbar');
+        bar.style.margin = '0';
+        const btn = (label, fn) => { const b = el('button', 'act', label); b.onclick = fn; bar.appendChild(b); };
+        if (!d.postChars) btn('Fetch the job post', () => raise('fetch-post', 'Fetch and store the job post'));
+        if (d.postChars && !state.brief) btn('Build the breakdown', () => raise('brief', 'Build the candidate-facing post breakdown'));
+        if (!d.letter) btn('Write a cover letter', async () => {
+          const why = await ask({ title: 'Cover letter', sub: 'Optional: one line on why this role / company matters to you. The letter claims nothing the CV does not.', placeholder: 'e.g. "their cross-border rails are exactly the problem I want next"', send: 'Request the letter' });
+          raise('cover-letter', 'Write a cover letter for this application', why ? { note: why } : {});
+        });
+        else btn('Revise the cover letter', () => raise('cover-letter', 'Revise the cover letter'));
+        btn('Score / re-score the fit', () => raise('rescore', 'Score my fit against this job post'));
+        qa.appendChild(bar);
+        w.appendChild(qa);
+
+        const rp = requestsPanel();
+        if (rp) w.appendChild(rp);
+        v.appendChild(w);
+      }
+
+      function docToolbar(kind) {
+        const bar = el('div', 'toolbar');
+        const open = el('button', 'act', 'Open in tab (print / save PDF)');
+        open.onclick = () => openRaw(kind);
+        bar.appendChild(open);
+        if (kind === 'cv') {
+          const mk = el('button', 'act' + (state.marking ? ' primary' : ''), state.marking ? 'Click a line…  (cancel)' : 'Mark a line');
+          mk.onclick = () => { state.marking = !state.marking; render(); };
+          bar.appendChild(mk);
+          if (state.doc && state.doc.historyDepth > 0) {
+            const h = el('button', 'act', 'Versions');
+            h.onclick = () => showVersions('cv');
+            bar.appendChild(h);
+          }
+        }
+        if (kind === 'letter' && state.doc && state.letter) {
+          const h = el('button', 'act', 'Versions');
+          h.onclick = () => showVersions('letter');
+          bar.appendChild(h);
+        }
+        const note = state.doc && kind === 'cv' && state.doc.note;
+        if (note) { const s = el('span', 'sub'); s.textContent = 'latest: ' + note; bar.appendChild(s); }
+        return bar;
+      }
+
+      function rCv(v) {
+        const d = state.doc;
+        if (!d || !d.html) {
+          v.innerHTML = '<div class="empty">No CV yet.<br><span class="sub">Ask your assistant to open a candidacy and tailor your CV.</span></div>';
+          return;
+        }
+        v.appendChild(docToolbar('cv'));
+        const rp = requestsPanel();
+        if (rp) v.appendChild(rp);
+        const w = el('div', 'doc-frame');
+        w.appendChild(frame(d.html, { pick: true }));
+        v.appendChild(w);
+      }
+
+      function rLetter(v) {
+        if (!state.letter) {
+          const e = el('div', 'empty');
+          e.innerHTML = 'No cover letter yet.';
+          const b = el('button', 'act primary', 'Ask for a cover letter');
+          b.onclick = async () => {
+            const why = await ask({ title: 'Cover letter', sub: 'Optional: one line on why this role / company.', send: 'Request the letter' });
+            raise('cover-letter', 'Write a cover letter for this application', why ? { note: why } : {});
+          };
+          e.appendChild(b);
+          v.appendChild(e);
+          return;
+        }
+        v.appendChild(docToolbar('letter'));
+        const w = el('div', 'doc-frame');
+        w.appendChild(frame(state.letter.html));
+        v.appendChild(w);
+      }
+
+      function rPost(v) {
+        const p = state.post;
+        if (!p || (!p.text && !p.html)) {
+          const e = el('div', 'empty');
+          e.innerHTML = 'No job post stored yet.';
+          const b = el('button', 'act primary', 'Ask the assistant to fetch it');
+          b.onclick = () => raise('fetch-post', 'Fetch and store the job post');
+          e.appendChild(b);
+          v.appendChild(e);
+          return;
+        }
+        if (p.html) {
+          const w = el('div', 'doc-frame');
+          w.appendChild(frame(p.html));
           v.appendChild(w);
-        } else if (state.tab === 'post') {
-          const p = state.post;
-          if (!p || (!p.text && !p.html)) return void (v.innerHTML = '<p class="empty">No job post stored yet.</p>');
-          if (p.html) {
-            const w = document.createElement('div');
-            w.className = 'doc-frame';
-            w.appendChild(frame(p.html));
-            v.appendChild(w);
-          } else {
-            const c = document.createElement('div');
-            c.className = 'card';
-            c.innerHTML = '<div class="sub">source: ' + esc(p.source || 'agent') + '</div><pre class="post">' + esc(p.text) + '</pre>';
-            v.appendChild(c);
-          }
-        } else if (state.tab === 'fit') {
-          const f = d && d.fit;
-          if (!f) return void (v.innerHTML = '<p class="empty">Not scored yet.</p>');
-          const c = document.createElement('div');
-          c.className = 'card';
-          let h = '<div class="score">' + f.score + '<span style="font-size:16px;color:var(--muted)">/100</span></div>';
-          if (f.verdict) h += '<div class="verdict">' + esc(f.verdict) + '</div>';
-          if (f.decidedBy)
-            h += '<div class="sub" style="margin-top:6px"><b>Decided by:</b> ' + esc(String(f.decidedBy).replace('-', ' ')) + '</div>';
-          if (f.levelRead)
-            h += '<div class="sub"><b>Level:</b> ' + esc(f.levelRead.supports || '?') + ' evidenced, ' +
-              esc(f.levelRead.targets || '?') + ' targeted' +
-              (f.levelRead.gap ? ' — ' + esc(f.levelRead.gap) : '') + '</div>';
-          if (d.version && f.basedOnVersion && f.basedOnVersion !== d.version)
-            h += '<div class="sub" style="margin-top:6px;color:var(--major)">⚠ scored against v' + f.basedOnVersion + ', CV is now v' + d.version + '</div>';
-          c.innerHTML = h;
-          v.appendChild(c);
-          if (f.gaps && f.gaps.length) {
-            const g = document.createElement('div');
-            g.className = 'card';
-            g.innerHTML = '<h3 style="margin:0 0 8px">Gaps</h3>' + f.gaps.map((x) =>
-              '<div class="gap"><div class="tagrow"><span class="sev ' + esc(x.severity) + '">' + esc(x.severity) + '</span>' +
-              (x.kind ? '<span class="kindtag">' + esc(x.kind) + '</span>' : '') + '</div>' +
-              '<div class="req">' + esc(x.requirement) + '</div>' +
-              (x.why ? '<div class="sub">' + esc(x.why) + '</div>' : '') +
-              (x.fix ? '<div class="fix">→ ' + esc(x.fix) + '</div>' : '') + '</div>').join('');
-            v.appendChild(g);
-          }
-          if (f.strengths && f.strengths.length) {
-            const s = document.createElement('div');
-            s.className = 'card';
-            s.innerHTML = '<h3 style="margin:0 0 8px">Strengths</h3>' + f.strengths.map((x) =>
-              '<div class="strength">' +
-              (x.strength ? '<span class="kindtag">' + esc(x.strength) + '</span> ' : '') +
-              '<span class="req">' + esc(x.requirement) + '</span>' +
-              (x.evidence ? '<div class="sub">' + esc(x.evidence) + '</div>' : '') + '</div>').join('');
-            v.appendChild(s);
-          }
-        } else if (state.tab === 'review') {
-          renderReview(v);
-        } else if (state.tab === 'apps') {
-          const rows = state.apps || [];
-          if (!rows.length) return void (v.innerHTML = '<p class="empty">No applications tracked yet.</p>');
-          const c = document.createElement('div');
-          c.className = 'card';
-          c.innerHTML = '<table><thead><tr><th>Company</th><th>Role</th><th>CV</th><th>Fit</th><th>Status</th></tr></thead><tbody>' +
-            rows.map((r) => {
-              const st = (r.application && r.application.status) || 'drafting';
-              return '<tr><td>' + esc(r.company) + '</td><td>' + esc(r.jobTitle) + '</td><td>v' + (r.cvVersion || 0) +
-                '</td><td>' + (r.fitScore == null ? '–' : r.fitScore) + '</td><td><span class="tag ' + esc(st) + '">' + esc(st) + '</span></td></tr>';
-            }).join('') + '</tbody></table>';
+        } else {
+          const c = el('div', 'card');
+          c.innerHTML = '<div class="sub">source: ' + esc(p.source || 'agent') + '</div><pre class="post">' + esc(p.text) + '</pre>';
           v.appendChild(c);
         }
       }
 
-      function renderReview(v) {
+      function rFit(v) {
+        const d = state.doc;
+        const f = d && d.fit;
+        if (!f) {
+          const e = el('div', 'empty');
+          e.innerHTML = 'Not scored yet.';
+          const b = el('button', 'act primary', 'Ask to score the fit');
+          b.onclick = () => raise('rescore', 'Score my fit against this job post');
+          e.appendChild(b);
+          v.appendChild(e);
+          return;
+        }
+        const b = fitBand(f.score);
+        const head = el('div', 'card');
+        head.innerHTML =
+          '<div class="score band-' + b.key + '">' + f.score + '<span>/100 · ' + b.label + '</span></div>' +
+          (f.verdict ? '<div class="verdict">' + esc(f.verdict) + '</div>' : '') +
+          (f.decidedBy ? '<div class="kv"><b>Decided by</b> ' + esc(String(f.decidedBy).replace('-', ' ')) + '</div>' : '') +
+          (f.levelRead ? '<div class="kv"><b>Level</b> ' + esc(f.levelRead.supports || '?') + ' evidenced, ' + esc(f.levelRead.targets || '?') + ' targeted' + (f.levelRead.gap ? ' — ' + esc(f.levelRead.gap) : '') + '</div>' : '') +
+          (fitStale(d) ? '<div class="kv" style="color:var(--major)">Scored against v' + f.basedOnVersion + ', CV is now v' + d.version + '.</div>' : '');
+        const rb = el('button', 'act small', 'Ask to re-score');
+        rb.style.marginTop = '10px';
+        rb.onclick = () => raise('rescore', 'Re-score the fit against the current CV');
+        head.appendChild(rb);
+        v.appendChild(head);
+
+        if (f.gaps && f.gaps.length) {
+          const g = el('div', 'card');
+          g.appendChild(el('h3', null, 'Gaps — ' + f.gaps.length));
+          f.gaps.forEach((x) => {
+            const row = el('div', 'gap');
+            row.innerHTML =
+              '<div class="tagrow"><span class="sev ' + esc(x.severity) + '">' + esc(x.severity) + '</span>' +
+              (x.kind ? '<span class="kindtag">' + esc(x.kind) + '</span>' : '') + '</div>' +
+              '<div class="req">' + esc(x.requirement) + '</div>' +
+              (x.why ? '<div class="sub">' + esc(x.why) + '</div>' : '') +
+              (x.fix ? '<div class="fix">→ ' + esc(x.fix) + '</div>' : '');
+            const cb = el('button', 'act small', 'Ask to close this');
+            cb.style.marginTop = '6px';
+            cb.onclick = () => raise('close-gap', 'Close the gap: ' + x.requirement, { gapId: x.id || '', current: x.fix || '', need: x.requirement });
+            row.appendChild(cb);
+            g.appendChild(row);
+          });
+          v.appendChild(g);
+        }
+        if (f.strengths && f.strengths.length) {
+          const s = el('div', 'card');
+          s.appendChild(el('h3', null, 'What already lands — ' + f.strengths.length));
+          f.strengths.forEach((x) => {
+            s.appendChild(el('div', 'strength',
+              '<div class="tagrow">' + (x.strength ? '<span class="kindtag">' + esc(x.strength) + '</span>' : '') +
+              '<span class="req">' + esc(x.requirement) + '</span></div>' +
+              (x.evidence ? '<div class="sub">' + esc(x.evidence) + '</div>' : '')));
+          });
+          v.appendChild(s);
+        }
+        const rp = requestsPanel();
+        if (rp) v.appendChild(rp);
+      }
+
+      function rReview(v) {
         const p = state.doc && state.doc.proposal;
-        if (!p) return void (v.innerHTML = '<p class="empty">No pending change proposal.</p>');
-        const c = document.createElement('div');
-        c.className = 'card';
-        c.innerHTML = '<h3 style="margin:0 0 4px">Proposed changes</h3><div class="sub">' + esc(p.summary || '') + '</div>';
+        if (!p) {
+          v.innerHTML = '<div class="empty">No pending change proposal.<br><span class="sub">When the assistant proposes wording, decide it here.</span></div>';
+          return;
+        }
+        const c = el('div', 'card');
+        c.appendChild(el('h3', null, 'Proposed changes'));
+        if (p.summary) c.appendChild(el('div', 'sub', esc(p.summary)));
         (p.changes || []).forEach((ch) => {
           const id = ch.id || ch.section;
-          const box = document.createElement('div');
-          box.className = 'gap';
+          const box = el('div', 'gap');
           box.innerHTML = '<div class="req">' + esc(ch.section) + '</div>' +
             (ch.why ? '<div class="sub">' + esc(ch.why) + '</div>' : '') +
             '<div class="sub" style="margin:4px 0"><b>now:</b> ' + esc(ch.current) + '</div>';
           (ch.options || []).forEach((o) => {
-            const el = document.createElement('div');
-            el.className = 'opt' + (state.picks[id] === o.id ? ' picked' : '');
-            el.innerHTML = '<div class="label">' + esc(o.label) + '</div><div>' + esc(o.text) + '</div>';
-            el.onclick = () => { state.picks[id] = o.id; render(); };
-            box.appendChild(el);
+            const opt = el('div', 'opt' + (state.picks[id] === o.id ? ' picked' : ''),
+              '<div class="label">' + esc(o.label) + '</div><div>' + esc(o.text) + '</div>');
+            opt.onclick = () => { state.picks[id] = o.id; render(); };
+            box.appendChild(opt);
           });
-          const skip = document.createElement('div');
-          skip.className = 'opt' + (state.picks[id] === 'skip' ? ' picked' : '');
-          skip.innerHTML = '<div class="label">Skip — keep current</div>';
-          skip.onclick = () => { state.picks[id] = 'skip'; render(); };
-          box.appendChild(skip);
+          const sk = el('div', 'opt' + (state.picks[id] === 'skip' ? ' picked' : ''), '<div class="label">Skip — keep current</div>');
+          sk.onclick = () => { state.picks[id] = 'skip'; render(); };
+          box.appendChild(sk);
           c.appendChild(box);
         });
-        const relay = (p.changes || [])
-          .map((ch) => {
-            const id = ch.id || ch.section;
-            const pick = state.picks[id];
-            if (!pick) return '  ' + (id) + ': (not decided)';
-            if (pick === 'skip') return '  ' + id + ': SKIP';
-            const o = (ch.options || []).find((x) => x.id === pick);
-            return '  ' + id + ': use "' + (o ? o.label : pick) + '"';
-          })
-          .join('\n');
-        const r = document.createElement('div');
-        r.className = 'relay';
-        r.textContent = 'Tell your assistant:\n\nApply proposal ' + (p.id || '') + ':\n' + relay;
-        c.appendChild(r);
-        const bar = document.createElement('div');
-        bar.className = 'toolbar';
-        bar.style.marginTop = '10px';
-        bar.innerHTML = '<button class="act primary" id="relay-copy">Copy the message</button>' +
-          '<button class="act" id="relay-clear">Dismiss this panel</button>';
+        const relay = 'Apply proposal ' + (p.id || '') + ':\n' + (p.changes || []).map((ch) => {
+          const id = ch.id || ch.section;
+          const pk = state.picks[id];
+          if (!pk) return '  ' + id + ': (not decided)';
+          if (pk === 'skip') return '  ' + id + ': SKIP';
+          const o = (ch.options || []).find((x) => x.id === pk);
+          return '  ' + id + ': use "' + (o ? o.label : pk) + '"';
+        }).join('\n');
+        c.appendChild(el('div', 'relay', esc(relay)));
+        const bar = el('div', 'toolbar');
+        bar.style.margin = '10px 0 0';
+        const cp = el('button', 'act primary', 'Copy for the assistant');
+        cp.onclick = () => navigator.clipboard && navigator.clipboard.writeText(relay);
+        const dz = el('button', 'act', 'Dismiss panel');
+        dz.onclick = () => post('/jobcv/proposal/decision', {});
+        bar.appendChild(cp); bar.appendChild(dz);
         c.appendChild(bar);
         v.appendChild(c);
-        document.getElementById('relay-copy').onclick = () => navigator.clipboard && navigator.clipboard.writeText(r.textContent);
-        document.getElementById('relay-clear').onclick = async () => {
-          await fetch('/jobcv/proposal/decision', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ sessionId: SESSION }),
-          });
-        };
+      }
+
+      /* ----------------------------------------------------------- versions */
+      async function showVersions(kind) {
+        let list;
+        try {
+          list = await fetch('/jobcv/history' + q('&kind=' + kind)).then((r) => r.json());
+        } catch (e) { return; }
+        const vs = (list && list.versions) || [];
+        if (!vs.length) return;
+        const c = document.getElementById('view');
+        c.innerHTML = '';
+        const card = el('div', 'card');
+        card.appendChild(el('h3', null, (kind === 'letter' ? 'Cover letter' : 'CV') + ' versions'));
+        vs.forEach((ver, i) => {
+          const row = el('div', 'gap');
+          row.innerHTML = '<div class="req">v' + ver.version + (i === 0 ? ' · current' : '') + '</div>' +
+            '<div class="sub">' + esc(ver.note || '(no note)') + ' · ' + ago(ver.updatedAt) + '</div>';
+          if (i !== 0) {
+            const rb = el('button', 'act small', 'Restore this');
+            rb.style.marginTop = '6px';
+            rb.onclick = async () => { await post('/jobcv/restore', { version: ver.version, kind }); selectTab(kind === 'letter' ? 'letter' : 'cv'); };
+            row.appendChild(rb);
+          }
+          card.appendChild(row);
+        });
+        const back = el('button', 'act', '← back');
+        back.onclick = () => selectTab(kind === 'letter' ? 'letter' : 'cv');
+        const bar = el('div', 'toolbar'); bar.style.margin = '0 0 12px'; bar.appendChild(back);
+        c.appendChild(bar);
+        c.appendChild(card);
       }
 
       window.openRaw = (kind) => {
-        const d = state.doc;
-        const html = kind === 'letter' ? (state.letter && state.letter.html) : (d && d.html);
+        const html = kind === 'letter' ? (state.letter && state.letter.html) : (state.doc && state.doc.html);
         if (!html) return;
         const w = window.open('', '_blank');
         w.document.write(html);
         w.document.close();
       };
 
-      const LIVE = new URLSearchParams(location.search).get('live') !== '0';
-      if (LIVE) {
-        connect();
-        poll();
-        setInterval(poll, 3000);
-      } else {
-        pollDocOnce();
-        poll();
+      /* --------------------------------------------------------------- boot */
+      selectTab(state.tab);
+      if (LIVE) { connect(); poll(); setInterval(poll, 3500); }
+      else { pollDocOnce(); poll(); }
+      // ?drawer=1 opens the applications drawer on load (demos, deep links).
+      if (new URLSearchParams(location.search).get('drawer') === '1') {
+        setTimeout(openDrawer, 400);
       }
     </script>
   </body>
