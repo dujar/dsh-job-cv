@@ -30,11 +30,13 @@ shared core; each shell only bolts a transport and a UI onto it.
   lib/routes/ │  ctx.webServer via            │  mcp/  │                                │
   mount.js    │  mountRouteGroups(ctx, …)     │        │  ui-server.js: one app instance │
               │                               │        │  → the SAME route groups on a  │
-  lib/client/*│  the preview: 14 source       │        │  plain http.Server + ui.html   │
-  → client.js │  fragments built into one     │        │                                │
-              │  IIFE bundle injected into    │        │  server.js: JSON-RPC 2.0 over  │
-              │  the DSH web GUI              │        │  stdio; 14 tools call that same │
-              │                               │        │  app instance IN-PROCESS       │
+  lib/client/*│  the preview: source          │        │  plain http.Server + ui.html   │
+  → client.js │  fragments built into one     │        │  (theme, an Overview dashboard, │
+              │  IIFE bundle injected into    │        │  a virtualised apps drawer, a  │
+              │  the DSH web GUI              │        │  request inbox)                │
+              │                               │        │  server.js: JSON-RPC 2.0 over  │
+              │                               │        │  stdio; ~17 tools call that    │
+              │                               │        │  same app instance IN-PROCESS  │
               └───────────────────────────────┘        └────────────────────────────────┘
 ```
 
@@ -93,15 +95,16 @@ specially and why they are not type-checked — `tsconfig.json` excludes them.
 
 Everything lives under `$DSH_HOME/dsh-job-cv/` (default `~/.dsh/dsh-job-cv/`):
 
-| Path                               | What                                                                                                                                              |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `sessions/<id>.json`               | the active candidacy for a session — current document, last 10 versions, letter, post, fit, proposal, status tag                                  |
-| `sessions/<id>.jobs/<hash>.json`   | that session's _parked_ candidacies (one per posting), whole records                                                                              |
-| `sessions/lists/<id>.json`         | the parsed jobs pick-list sidecar                                                                                                                 |
-| `master.json`                      | the one master CV, its own version line                                                                                                           |
-| `profile.json`                     | the candidate profile — standing facts (years, what they will/won't claim, confidentiality, "why I left") every session would otherwise re-derive |
-| `applications/` or the session cwd | mirrored candidacy folders (`<company>/<job-id>/cv/…`, `letter/…`, `notes/…`) a human can open outside the harness                                |
-| `mcp-session.json`                 | the MCP shell's remembered session id                                                                                                             |
+| Path                                | What                                                                                                                                                                                    |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sessions/<id>.json`                | the active candidacy for a session — current document, last 10 versions, letter, post, fit, proposal, status tag                                                                        |
+| `sessions/<id>.jobs/<hash>.json`    | that session's _parked_ candidacies (one per posting), whole records                                                                                                                    |
+| `sessions/lists/<id>.json`          | the parsed jobs pick-list sidecar                                                                                                                                                       |
+| `master.json`                       | the one master CV, its own version line                                                                                                                                                 |
+| `profile.json`                      | the candidate profile — standing facts (years, what they will/won't claim, confidentiality, "why I left") every session would otherwise re-derive                                       |
+| `sessions/<id>.json` → `requests[]` | the preview's request inbox — a button clicked in the MCP UI (cover letter, close a gap, a marked CV line) with no composer to deliver it; rides `jobcv_context`, the agent resolves it |
+| `applications/` or the session cwd  | mirrored candidacy folders (`<company>/<job-id>/cv/…`, `letter/…`, `notes/…`) a human can open outside the harness                                                                      |
+| `mcp-session.json`                  | the MCP shell's remembered session id                                                                                                                                                   |
 
 Both shells read and write the same files, so an application opened in one
 shows up in the other.

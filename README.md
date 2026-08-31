@@ -15,14 +15,14 @@ in the other. If you use Claude Code, Claude Desktop, Cline or any other MCP
 client, jump to [**Also an MCP server**](#also-an-mcp-server).
 
 <p align="center">
-  <img src="docs/screenshots/preview-cv.png" alt="The live CV preview, A4, with a weak bullet marked" width="49%">
-  <img src="docs/screenshots/preview-fit.png" alt="The fit panel: score, what it turns on, the level read, gaps by kind, strengths by grade" width="49%">
+  <img src="docs/screenshots/preview-overview.png" alt="Overview: fit score, what it turns on, an at-a-glance metric grid, and one-click asks to the assistant" width="49%">
+  <img src="docs/screenshots/preview-fit.png" alt="The fit panel: score band, decidedBy, level read, gaps by kind, strengths by grade — each with an Ask-to-close button" width="49%">
 </p>
 <p align="center">
   <img src="docs/screenshots/preview-post.png" alt="The job post rendered as a page with every unmet requirement marked red" width="49%">
-  <img src="docs/screenshots/preview-review.png" alt="Proposed wording changes with options to accept, swap or skip" width="49%">
+  <img src="docs/screenshots/preview-apps.png" alt="The applications drawer — a virtualised list behind a discreet button, dark theme" width="49%">
 </p>
-<p align="center"><sub>The MCP shell's preview — CV · Fit · Post · Review. The DSH plugin renders the same panels inside the harness.</sub></p>
+<p align="center"><sub>The MCP shell's preview: an Overview dashboard, the Fit panel, the marked-up Post, and the applications drawer (shown dark). Light / dark / system toggle. The DSH plugin renders the same panels inside the harness.</sub></p>
 
 ## Features
 
@@ -181,8 +181,21 @@ Ask your assistant to tailor your CV against a posting. It calls `jobcv_context`
 first (which returns a `preview:` URL — **open that in a browser** and keep it
 beside the chat; it also prints on the server's stderr on start), opens the
 candidacy, fetches and stores the post, scores the fit, and saves the tailored
-CV. The preview updates live. Add `?tab=fit` (or `post`, `review`, `cv`) to the
-URL to deep-link a panel; `?live=0` for a static snapshot.
+CV. The preview updates live.
+
+**The preview is interactive.** An **Overview** dashboard leads with the fit
+score, an at-a-glance metric grid and one-click asks. Buttons — _write a cover
+letter_, _re-score_, _fetch the post_, _close this gap_, and **Mark a line** on
+the CV to say what's wrong with it — don't need a composer: they drop a
+structured request into an inbox that rides `jobcv_context.pendingRequests`, so
+your assistant picks it up on its next turn. What you can do directly, the UI
+does directly: switch the active application, set a status, restore a version,
+toggle light / dark. Your applications live in a drawer behind a discreet
+button, a virtualised list that stays smooth at any length.
+
+URL params: `?tab=overview` (or `cv`, `letter`, `post`, `fit`, `review`) deep-links
+a panel; `?theme=dark`; `?drawer=1` opens the applications list; `?live=0` for a
+static snapshot.
 
 `--root` (or `$DSH_JOB_CV_ROOT`) sets where the per-application folders are
 written — one folder per job, with the CV, cover letter and post inside, that
@@ -194,11 +207,13 @@ new one.
 
 ### The surface
 
-15 typed tools, each a thin wrapper over the same `/jobcv/*` operations the
+17 typed tools, each a thin wrapper over the same `/jobcv/*` operations the
 plugin uses: `jobcv_context` · `jobcv_open` · `jobcv_get` · `jobcv_save_cv` ·
 `jobcv_save_letter` · `jobcv_save_master` · `jobcv_save_profile` ·
 `jobcv_set_post` · `jobcv_set_brief` · `jobcv_score` · `jobcv_propose` ·
-`jobcv_switch` · `jobcv_set_status` · `jobcv_restore` · `jobcv_load_joblist`.
+`jobcv_switch` · `jobcv_set_status` · `jobcv_restore` · `jobcv_resolve_requests` ·
+`jobcv_load_joblist`. `jobcv_context` carries `pendingRequests` (things clicked
+in the preview) — act on them, then `jobcv_resolve_requests` their ids.
 Resources: `jobcv://skill` (the full contract), `jobcv://profile` (your standing
 facts), `jobcv://context`.
 

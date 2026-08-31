@@ -132,6 +132,8 @@ assert.deepEqual(paths.sort(), [
   '/jobcv/profile',
   '/jobcv/proposal',
   '/jobcv/proposal/decision',
+  '/jobcv/request',
+  '/jobcv/request/resolve',
   '/jobcv/restore',
   '/jobcv/skill',
   '/jobcv/status',

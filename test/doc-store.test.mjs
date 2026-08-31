@@ -190,6 +190,7 @@ try {
     letter: null,
     letterHistory: [],
     application: null,
+    requests: [],
     note: '',
     company: '',
     jobTitle: '',

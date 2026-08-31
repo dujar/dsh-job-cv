@@ -208,18 +208,24 @@ Design decisions worth remembering:
   GETs, so it tracks saves live, but it does not (yet) have the annotate /
   mark-a-spot surface.
 
+The preview is now interactive (RESOLVED, v2): light/dark/system theme, an
+Overview dashboard, a request inbox (`lib/store/requests.js`, `/jobcv/request`,
+`jobcv_context.pendingRequests`, `jobcv_resolve_requests`) that UI buttons and
+CV line-marking feed, direct actions (switch / status / restore), and a
+virtualised applications drawer.
+
 Still open:
 
-- **Proposal decisions have no back-channel.** In DSH the user's accept/skip
-  travels to the agent through chat; the MCP shell has no chat. v1 shows a
-  copy-paste relay in the Review tab. A `/jobcv/proposal/decision` that
-  RECORDS the choice + a `jobcv_get what:"decision"` (or a resource) would
-  close the loop.
-- **Full render parity.** Port the shell-agnostic client fragments
-  (`030-cv-preview`, `025-cv-annotate`, `027-cv-fit`, `031-cv-master`,
-  `035-applications`, `036-jobs`) into a shared `lib/render/` bundle both
-  shells load, so the MCP page gains annotate/history/master-diff without a
-  second implementation.
+- **Proposal decisions still have no true back-channel.** The Review tab shows
+  a copy-paste relay. It could raise a `revise`-style request instead so the
+  agent picks the decision up from the inbox like everything else.
+- **Full render parity.** The MCP `ui.html` re-implements the panels rather
+  than sharing the DSH client fragments. A shared `lib/render/` bundle both
+  shells load would remove the second implementation (annotate range-picking,
+  master-diff, the page-overflow deck are DSH-only for now).
+- **Backend pagination for the applications drawer.** The list is virtualised
+  client-side but `/jobcv/applications` still returns the whole set (capped at
+  200). True infinite scroll needs an `after=` cursor on that route.
 - **Daemon mode.** Two MCP clients at once = two servers = two ports. A
   first-one-binds daemon would share one preview.
 - **`jobcv_triage`.** `jobcv_load_joblist` + per-job `jobcv_open`/`jobcv_score`

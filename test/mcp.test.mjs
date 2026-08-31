@@ -141,6 +141,28 @@ try {
   )
   assert.ok(profileGet.text.includes('7 years'), 'jobcv_get what:profile round-trips')
 
+  // ---- the request inbox: the preview raises an ask, the agent sees + clears it ----
+  await fetch(ui.url + 'jobcv/request', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      sessionId: 'mcp-test-abc123',
+      kind: 'cover-letter',
+      summary: 'Write a cover letter',
+      detail: { note: 'their rails are the problem I want next' },
+    }),
+  })
+  const ctx2 = toolJson(await rpc('tools/call', { name: 'jobcv_context', arguments: {} }))
+  assert.equal(ctx2.pendingRequests.length, 1, 'jobcv_context surfaces the raised request')
+  assert.equal(ctx2.pendingRequests[0].kind, 'cover-letter')
+  const reqId = ctx2.pendingRequests[0].id
+  const resolved = toolJson(
+    await rpc('tools/call', { name: 'jobcv_resolve_requests', arguments: { ids: [reqId] } }),
+  )
+  assert.equal(resolved.pending, 0, 'the agent clears what it acted on')
+  const ctx3 = toolJson(await rpc('tools/call', { name: 'jobcv_context', arguments: {} }))
+  assert.equal(ctx3.pendingRequests.length, 0, 'and it is gone from context')
+
   // ---- the preview page is served with the session baked in ----
   const page = await fetch(ui.url).then((r) => r.text())
   assert.ok(page.includes('"mcp-test-abc123"'), 'the page carries the injected session id')
@@ -148,6 +170,8 @@ try {
   assert.ok(page.includes("get('tab')"), 'the page deep-links a tab from ?tab=')
   assert.ok(page.includes("get('live')"), 'and supports ?live=0 for a static snapshot')
   assert.ok(page.includes('.dsh-gap'), 'and paints the gap-mark convention into its iframes')
+  assert.ok(page.includes('data-theme'), 'the page has a light/dark theme')
+  assert.ok(page.includes('paintRows'), 'the applications drawer virtualises its rows')
 
   // ---- unknown method is a JSON-RPC error, not a crash ----
   const bad = await rpc('does/not/exist', {})

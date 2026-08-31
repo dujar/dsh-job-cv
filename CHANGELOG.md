@@ -20,6 +20,13 @@ pre-1.0 and does not yet promise semantic-versioning stability.
   bands calibrated to the contract and shared with the tracker.
 - **Candidate profile** (`/jobcv/profile`, `jobcv://profile`) — standing facts
   about the person so a session does not re-derive them.
+- **The MCP preview is now interactive**: light/dark/system theme, an Overview
+  dashboard with metrics, and buttons that raise a structured request into an
+  inbox the agent picks up via `jobcv_context` (write a cover letter, close a
+  gap, re-score, fetch the post, or **Mark a line** on the CV). Direct actions
+  — switch application, set status, restore a version. Applications moved to a
+  virtualised drawer behind a discreet button. New: `jobcv_resolve_requests`,
+  `?theme=` / `?drawer=` params.
 - Type-checking gate: `npm run typecheck` (`tsc --noEmit` over the host half via
   JSDoc + `checkJs`), wired into `npm test`.
 - CI (GitHub Actions), `CONTRIBUTING.md`, `SECURITY.md`, `docs/ARCHITECTURE.md`.
