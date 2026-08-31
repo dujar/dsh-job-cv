@@ -71,6 +71,16 @@ assert.ok(
   PRESET_COMPOSITION.includes('whatever this runtime gives you'),
   'it defers the page-reading mechanics to the runtime / contract',
 )
+// The candidate profile — the standing facts every session would re-derive —
+// is pointed at by the persona and specified by the contract.
+assert.ok(
+  PRESET_COMPOSITION.includes('GET /jobcv/profile'),
+  'the persona reads the standing candidate facts first',
+)
+assert.ok(
+  skillInstructions().includes('THE CANDIDATE PROFILE'),
+  'the contract specifies the profile route and the propose-then-save rule',
+)
 // The persona keeps the STRATEGY of a cover letter (lead with them, one
 // specific thing, claim nothing the CV does not) and points at the contract
 // for the craft — structure, tone, one-page layout — which is where a rewrite

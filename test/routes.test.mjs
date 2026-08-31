@@ -129,6 +129,7 @@ assert.deepEqual(paths.sort(), [
   '/jobcv/letter',
   '/jobcv/master',
   '/jobcv/post',
+  '/jobcv/profile',
   '/jobcv/proposal',
   '/jobcv/proposal/decision',
   '/jobcv/restore',
