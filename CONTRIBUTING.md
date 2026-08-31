@@ -80,3 +80,15 @@ are fixing, not just the happy path.
 - Body: the _why_. Note any convention you had to work around.
 - Green `npm test` before you push.
 - One logical change per PR.
+
+## Branch protection
+
+`master` is guarded. Server-side rules (`.github/master-ruleset.json`: no
+force-push, no deletion, CI green, PR required) apply once the repo is public
+or on GitHub Pro. Until then, enable the local guard in your clone:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+`.githooks/pre-push` refuses a force-push or a delete of `master`.

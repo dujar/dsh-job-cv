@@ -65,10 +65,13 @@
       .verdict { color: var(--muted); margin-top: 6px; }
       .gap, .strength { border-top: 1px solid var(--line); padding: 10px 0; }
       .gap:first-of-type, .strength:first-of-type { border-top: 0; }
+      .tagrow { display: flex; gap: 6px; align-items: center; margin-bottom: 2px; }
       .sev { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
       .sev.blocker { color: var(--blocker); }
       .sev.major { color: var(--major); }
       .sev.minor { color: var(--minor); }
+      .kindtag { display: inline-block; font-size: 10px; letter-spacing: 0.02em; color: var(--muted);
+        border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; line-height: 15px; }
       .req { font-weight: 600; margin: 2px 0; }
       .sub { color: var(--muted); font-size: 13px; }
       .fix { font-size: 13px; margin-top: 4px; }
@@ -111,16 +114,39 @@
       const SESSION = __JOBCV_SESSION__;
       document.getElementById('meta-session').textContent = 'session ' + SESSION;
       const q = (s) => '?session=' + encodeURIComponent(SESSION) + (s || '');
-      const state = { doc: null, letter: null, post: null, apps: null, tab: 'cv', picks: {} };
+      const TABS = ['cv', 'letter', 'post', 'fit', 'review', 'apps'];
+      // Deep-linkable: /?tab=fit opens that tab, and switching tabs updates the
+      // URL so a reload or a shared link lands in the same place.
+      const wanted = new URLSearchParams(location.search).get('tab');
+      const state = {
+        doc: null,
+        letter: null,
+        post: null,
+        apps: null,
+        tab: TABS.includes(wanted) ? wanted : 'cv',
+        picks: {},
+      };
+
+      function selectTab(tab) {
+        if (!TABS.includes(tab)) return;
+        state.tab = tab;
+        for (const el of document.querySelectorAll('nav button')) {
+          el.classList.toggle('active', el.dataset.tab === tab);
+        }
+        try {
+          const u = new URL(location.href);
+          u.searchParams.set('tab', tab);
+          history.replaceState(null, '', u);
+        } catch (e) {}
+        render();
+      }
 
       /* ---- tabs ---- */
       document.getElementById('tabs').addEventListener('click', (e) => {
         const b = e.target.closest('button[data-tab]');
-        if (!b) return;
-        state.tab = b.dataset.tab;
-        for (const el of document.querySelectorAll('nav button')) el.classList.toggle('active', el === b);
-        render();
+        if (b) selectTab(b.dataset.tab);
       });
+      selectTab(state.tab);
 
       /* ---- data ---- */
       function applyDoc(doc) {
@@ -165,13 +191,38 @@
         };
       }
 
+      // /?live=0 — one fetch, no open stream. For a headless capture (the SSE
+      // connection never goes idle, so it hangs a screenshotter) and anyone
+      // who just wants a snapshot.
+      async function pollDocOnce() {
+        try {
+          const doc = await fetch('/jobcv/doc' + q()).then((r) => r.json());
+          applyDoc(doc);
+          document.getElementById('live-dot').classList.remove('live');
+          document.getElementById('live-text').textContent = 'snapshot';
+        } catch (e) {}
+      }
+
       /* ---- rendering ---- */
       const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+      // The red gap convention, enforced here rather than by whatever the
+      // agent wrote — same rule as the DSH client. The iframe is fully
+      // sandboxed (no same-origin), so it goes into the srcdoc string.
+      const GAP_CSS = '<style>' +
+        '.dsh-gap{color:#b3261e!important;background:rgba(179,38,30,.08)!important;' +
+        'border-bottom:2px solid #b3261e!important;border-radius:2px;padding:0 1px}' +
+        '.dsh-gap[data-dsh-gap="blocker"]{background:rgba(179,38,30,.16)!important;font-weight:600}' +
+        '.dsh-gap[data-dsh-gap="minor"]{border-bottom:1px dashed #b3261e!important;' +
+        'background:rgba(179,38,30,.04)!important}</style>';
 
       function frame(html) {
         const f = document.createElement('iframe');
         f.setAttribute('sandbox', '');
-        f.srcdoc = html;
+        const s = String(html || '');
+        f.srcdoc = s.includes('</head>') ? s.replace('</head>', GAP_CSS + '</head>')
+          : s.includes('<body') ? s.replace(/(<body[^>]*>)/i, '$1' + GAP_CSS)
+          : GAP_CSS + s;
         return f;
       }
 
@@ -221,6 +272,12 @@
           c.className = 'card';
           let h = '<div class="score">' + f.score + '<span style="font-size:16px;color:var(--muted)">/100</span></div>';
           if (f.verdict) h += '<div class="verdict">' + esc(f.verdict) + '</div>';
+          if (f.decidedBy)
+            h += '<div class="sub" style="margin-top:6px"><b>Decided by:</b> ' + esc(String(f.decidedBy).replace('-', ' ')) + '</div>';
+          if (f.levelRead)
+            h += '<div class="sub"><b>Level:</b> ' + esc(f.levelRead.supports || '?') + ' evidenced, ' +
+              esc(f.levelRead.targets || '?') + ' targeted' +
+              (f.levelRead.gap ? ' — ' + esc(f.levelRead.gap) : '') + '</div>';
           if (d.version && f.basedOnVersion && f.basedOnVersion !== d.version)
             h += '<div class="sub" style="margin-top:6px;color:var(--major)">⚠ scored against v' + f.basedOnVersion + ', CV is now v' + d.version + '</div>';
           c.innerHTML = h;
@@ -229,7 +286,8 @@
             const g = document.createElement('div');
             g.className = 'card';
             g.innerHTML = '<h3 style="margin:0 0 8px">Gaps</h3>' + f.gaps.map((x) =>
-              '<div class="gap"><span class="sev ' + esc(x.severity) + '">' + esc(x.severity) + '</span>' +
+              '<div class="gap"><div class="tagrow"><span class="sev ' + esc(x.severity) + '">' + esc(x.severity) + '</span>' +
+              (x.kind ? '<span class="kindtag">' + esc(x.kind) + '</span>' : '') + '</div>' +
               '<div class="req">' + esc(x.requirement) + '</div>' +
               (x.why ? '<div class="sub">' + esc(x.why) + '</div>' : '') +
               (x.fix ? '<div class="fix">→ ' + esc(x.fix) + '</div>' : '') + '</div>').join('');
@@ -239,7 +297,9 @@
             const s = document.createElement('div');
             s.className = 'card';
             s.innerHTML = '<h3 style="margin:0 0 8px">Strengths</h3>' + f.strengths.map((x) =>
-              '<div class="strength"><div class="req">' + esc(x.requirement) + '</div>' +
+              '<div class="strength">' +
+              (x.strength ? '<span class="kindtag">' + esc(x.strength) + '</span> ' : '') +
+              '<span class="req">' + esc(x.requirement) + '</span>' +
               (x.evidence ? '<div class="sub">' + esc(x.evidence) + '</div>' : '') + '</div>').join('');
             v.appendChild(s);
           }
@@ -327,9 +387,15 @@
         w.document.close();
       };
 
-      connect();
-      poll();
-      setInterval(poll, 3000);
+      const LIVE = new URLSearchParams(location.search).get('live') !== '0';
+      if (LIVE) {
+        connect();
+        poll();
+        setInterval(poll, 3000);
+      } else {
+        pollDocOnce();
+        poll();
+      }
     </script>
   </body>
 </html>
