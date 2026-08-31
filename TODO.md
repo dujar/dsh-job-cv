@@ -185,16 +185,18 @@ read/write the same `$DSH_HOME/dsh-job-cv` state.
 
 Design decisions worth remembering:
 
-- **One core, two shells.** `defineJobCvRoutes(deps)` was already
-  shell-agnostic (it takes `store` / `resolveRoot` / `sendJson`, not `ctx`).
-  The MCP shell stands those exact route groups on a plain `http.Server`
-  (`lib/mcp/ui-server.js`), wrapped in the exact `guardHandler` the plugin
-  uses. `lib/routes/mount.js` (the `ctx.webServer` binding) stays
-  plugin-only.
-- **Tools are thin wrappers over the routes, called over loopback HTTP** —
-  not in-process. The route guard, body pipeline and trust check run once,
-  identically, for the browser and for the tool layer. `isTrustedRequest`
-  passes an internal `fetch` (loopback Host, `application/json`, no Origin).
+- **One core, two shells.** The workflow's operations live in
+  `lib/app/job-cv.js` (`createJobCvApp`): validation, the `assertActiveJob`
+  guard, `normalize*`, the orchestrations — with typed errors
+  (`lib/app/errors.js`). `defineJobCvRoutes` handlers are thin wrappers that
+  parse the request and call one app method through `respond()`. The MCP
+  shell builds ONE app instance and both its preview routes and its tools
+  use it; the tools call it **in-process** (no loopback HTTP). Three routes
+  stay handler-heavy — `/jobcv/stream`, `/jobcv/file`, `/jobcv/intake` — as
+  pure transport.
+- **`lib/routes/mount.js`** (the `ctx.webServer` binding + the typed-error
+  status map) stays plugin-only; the MCP shell's `buildRouteTable` is the
+  ~15-line `http.Server` equivalent.
 - **The session id is the server's.** Minted once, remembered in
   `mcp-session.json`, injected into every request. The whole "copy the
   session id verbatim, a wrong one still 200s" section of the contract does
@@ -227,6 +229,10 @@ Still open:
 - **Reading the post.** The server has no fetch tool; the client fetches and
   `jobcv_set_post`s. If the host ever registers a fetch provider (see
   "Reading job posts" above) a `jobcv_ingest_post(url)` tool becomes trivial.
+- **Per-domain route files.** `routes.js` dropped from 936 → ~530 lines once
+  the handlers became thin, and is grouped by domain already. Splitting each
+  `defineXRoutes` into its own `lib/routes/<domain>.js` is now mechanical if
+  the file grows further.
 
 ## Smaller
 

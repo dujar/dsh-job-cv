@@ -11,8 +11,12 @@ shared core; each shell only bolts a transport and a UI onto it.
   lib/store/*  ─────┤  documents, versions, candidacy folders, master CV, fit, proposals │
   (framework-free)  │  pure normalisation + factory stores, one JSON file per session    │
                     │                                                                    │
-  lib/routes/       │  defineJobCvRoutes(deps) — the /jobcv/* handlers, given `store`,    │
-  routes.js    ─────┤  `resolveRoot`, `sendJson`… (NEVER a DSH `ctx`)                     │
+  lib/app/     ─────┤  createJobCvApp(deps) — the workflow's operations, once: input     │
+  job-cv.js         │  validation, the mid-turn-switch guard, normalize*, the multi-step │
+                    │  orchestrations. Typed errors (lib/app/errors.js). No HTTP.        │
+                    │                                                                    │
+  lib/routes/       │  defineJobCvRoutes(deps) — thin /jobcv/* handlers: parse request → │
+  routes.js    ─────┤  call the app → serialize. Takes `deps.app`, or builds one.        │
                     │                                                                    │
   lib/preset/       │  skillInstructions() — the agent-facing contract text, one         │
   preset-seed.js ───┤  generator both shells serve so it can never drift                 │
@@ -24,14 +28,13 @@ shared core; each shell only bolts a transport and a UI onto it.
   lib/index.js│  apply(ctx): seeds the `job`  │  bin/  │  dsh-job-cv-mcp.js: mints a     │
               │  preset, mounts the routes on │  lib/  │  session id, starts both below │
   lib/routes/ │  ctx.webServer via            │  mcp/  │                                │
-  mount.js    │  mountRouteGroups(ctx, …)     │        │  ui-server.js: the SAME route  │
-              │                               │        │  groups on a plain http.Server │
-  lib/client/*│  the preview: 14 source       │        │  + one self-contained preview  │
-  → client.js │  fragments built into one     │        │  page (ui.html)                │
-              │  IIFE bundle injected into    │        │                                │
-              │  the DSH web GUI              │        │  server.js: newline-delimited  │
-              │                               │        │  JSON-RPC 2.0 over stdio, 14   │
-              │                               │        │  tools wrapping the routes     │
+  mount.js    │  mountRouteGroups(ctx, …)     │        │  ui-server.js: one app instance │
+              │                               │        │  → the SAME route groups on a  │
+  lib/client/*│  the preview: 14 source       │        │  plain http.Server + ui.html   │
+  → client.js │  fragments built into one     │        │                                │
+              │  IIFE bundle injected into    │        │  server.js: JSON-RPC 2.0 over  │
+              │  the DSH web GUI              │        │  stdio; 14 tools call that same │
+              │                               │        │  app instance IN-PROCESS       │
               └───────────────────────────────┘        └────────────────────────────────┘
 ```
 
@@ -46,17 +49,30 @@ per-session write lock, the version history, and the candidacy-folder mirror.
 Full documents are stored everywhere — deltas against the master are _derived_
 views computed on demand (`lib/store/cv-diff.js`), never persisted patches.
 
-**`defineJobCvRoutes(deps)` takes injected dependencies, not a DSH context.**
-That is the single decision that makes two shells possible. The plugin passes
-`store`, a `resolveRoot` that reads the session's cwd, and the harness's
-`sendJson`; the MCP shell passes the same shapes built from its own config. The
-handlers cannot tell which shell they are running under.
+**`lib/app/job-cv.js` is the application service — the workflow once.** Every
+operation the plugin exposes as a route and the MCP shell exposes as a tool is
+a method here: `saveCv`, `openWorkspace`, `score`, `propose`, `switchCandidacy`…
+Input validation, the `assertActiveJob` mid-turn-switch guard, the `normalize*`
+coercion and the multi-step orchestrations (workspace upsert, master mirror,
+switch sidecar) live in this layer, not in the routes and not duplicated in the
+MCP server. It throws the typed errors from `lib/app/errors.js` (`BadRequest`
+400, `NotFound` 404, `StaleSave` 409); a route maps them to a status, the MCP
+tool surfaces the message.
+
+**`defineJobCvRoutes(deps)` takes injected dependencies, not a DSH context, and
+the handlers are thin.** A handler parses the HTTP request and calls one app
+method through `respond()` (which serialises the result or maps a typed error).
+Three routes stay handler-heavy because they are pure transport, not workflow:
+`/jobcv/stream` (SSE), `/jobcv/file` (content-type + CSP), `/jobcv/intake` (a
+base64 upload body). The plugin lets the routes build the app from `deps`; the
+MCP shell builds it once and passes it as `deps.app`, because its tools call
+the same instance in-process — no loopback HTTP.
 
 **`lib/routes/mount.js` is the only DSH-coupled route code.** It registers each
-guarded handler on `ctx.webServer` and derives the boot-log summary from the
-declarations. The MCP shell has its own ~40-line equivalent
-(`buildRouteTable` in `ui-server.js`) that puts the same guarded handlers into
-a `Map` an `http.Server` dispatches on.
+guarded handler on `ctx.webServer`, derives the boot-log summary from the
+declarations, and maps a typed error's `.status`. The MCP shell has its own
+~15-line equivalent (`buildRouteTable` in `ui-server.js`) that puts the same
+guarded handlers into a `Map` an `http.Server` dispatches on.
 
 **The agent contract is generated, not written twice.** `skillInstructions()`
 returns the plain-text contract served at `GET /jobcv/skill` (plugin) and as
