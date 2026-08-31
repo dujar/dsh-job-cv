@@ -214,8 +214,9 @@ assert.ok(!bare.includes('undefined'), 'missing fields are omitted, never printe
   assert.equal(T.applicationHas(rows[1], 'note'), false, 'an empty note is no note')
   assert.equal(T.applicationHas(rows[0], 'post'), true)
 
-  // Fit bands mirror the fit panel's thresholds; unscored is its own bucket.
-  assert.equal(T.applicationFitBand(rows[0]), 'partial')
+  // Fit bands ARE the fit panel's calibration boundaries; unscored is its own
+  // bucket. (62 → one framing risk, 81 → clears the screen, 30 → wrong level.)
+  assert.equal(T.applicationFitBand(rows[0]), 'solid')
   assert.equal(T.applicationFitBand(rows[2]), 'strong')
   assert.equal(T.applicationFitBand(rows[1]), 'unscored')
   assert.equal(T.applicationFitBand({ ...row({}), fitScore: 30 }), 'thin')

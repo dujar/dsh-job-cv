@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { normalizeFit, readFit } from '../lib/store/fit.js'
 import { normalizeBrief, readBrief } from '../lib/store/post-brief.js'
+import { SEVERITIES } from '../lib/shared/severity.js'
 
 // The fit assessment: a percentage is only worth showing if it is about a
 // document that still exists, and a gap is only worth showing if the user can
@@ -13,20 +14,35 @@ const fit = normalizeFit(
   {
     score: '68.6',
     verdict: 'Strong platform record, no evidence of the team-lead scope they ask for',
+    decidedBy: 'EVIDENCE-DEPTH',
+    levelRead: { supports: 'senior', targets: 'staff', gap: 'one cross-org project' },
     gaps: [
       {
         requirement: 'Team leadership',
         severity: 'minor',
+        kind: 'prepare-story',
         why: 'Asked for',
         fix: 'Name the team size',
       },
-      { requirement: 'Kubernetes at scale', severity: 'BLOCKER', fix: 'How many clusters?' },
-      { requirement: 'Terraform', severity: 'nonsense', why: 'Listed', fix: 'Add a bullet' },
+      {
+        requirement: 'Kubernetes at scale',
+        severity: 'BLOCKER',
+        kind: 'supply-fact',
+        fix: 'How many clusters?',
+      },
+      {
+        requirement: 'Terraform',
+        severity: 'nonsense',
+        kind: 'nonsense',
+        why: 'Listed',
+        fix: 'Add a bullet',
+      },
       { requirement: '   ', severity: 'blocker' },
       'not an object',
     ],
     strengths: [
-      { requirement: 'Go', evidence: '4 years across two employers' },
+      { requirement: 'Go', evidence: '4 years across two employers', strength: 'PROVEN' },
+      { requirement: 'Rust', evidence: 'a side project', strength: 'nonsense' },
       { evidence: 'orphan' },
     ],
   },
@@ -36,17 +52,32 @@ const fit = normalizeFit(
 assert.equal(fit.score, 69, 'a score is rounded and clamped into 0..100')
 assert.equal(fit.basedOnVersion, 4)
 assert.equal(fit.basedOnLetter, 2, 'the letter is judged too, and says so')
+assert.equal(fit.decidedBy, 'evidence-depth', 'decidedBy is normalized to the vocabulary')
+assert.equal(fit.levelRead.supports, 'senior', 'the level read carries through')
+assert.equal(fit.levelRead.gap, 'one cross-org project')
 assert.equal(fit.gaps.length, 3, 'a gap with no requirement is not a gap')
 assert.equal(
   fit.gaps[0].severity,
   'blocker',
   'blockers sort to the top — the panel is read top-down',
 )
+assert.equal(fit.gaps[0].id, 'g1', 'the id follows the sorted order, not the input order')
+assert.equal(fit.gaps[0].kind, 'supply-fact', 'the gap kind carries through')
+assert.equal(fit.gaps[1].kind, '', 'an unknown kind degrades to empty, not to a guess')
+assert.equal(fit.gaps[2].id, 'g3')
 assert.equal(fit.gaps[0].requirement, 'Kubernetes at scale')
 assert.equal(fit.gaps[1].severity, 'major', 'an unknown severity degrades to major, not to nothing')
 assert.equal(fit.gaps[1].requirement, 'Terraform')
 assert.equal(fit.gaps[2].severity, 'minor', 'and polish sorts last')
-assert.equal(fit.strengths.length, 1, 'a strength with no requirement is dropped')
+assert.equal(fit.strengths.length, 2, 'a strength with no requirement is dropped')
+assert.equal(fit.strengths[0].strength, 'proven', 'the strength grade is normalized')
+assert.equal(fit.strengths[1].strength, '', 'an unknown grade degrades to empty')
+assert.equal(normalizeFit({ score: 50 }, 1, 0).levelRead, null, 'no level read sent, none stored')
+assert.equal(
+  normalizeFit({ score: 50, decidedBy: 'wat' }, 1, 0).decidedBy,
+  '',
+  'a junk decidedBy is dropped',
+)
 assert.ok(fit.updatedAt > 0)
 
 assert.equal(normalizeFit({ score: 140 }, 1, 0).score, 100)
@@ -112,10 +143,14 @@ assert.equal(
   'a letter revision dates the score as surely as a CV save',
 )
 
+// The bands ARE the contract's calibration boundaries, one set of numbers.
 assert.equal(F.fitBand(90).key, 'strong')
-assert.equal(F.fitBand(75).key, 'strong')
-assert.equal(F.fitBand(74).key, 'partial')
-assert.equal(F.fitBand(49).key, 'thin')
+assert.equal(F.fitBand(80).key, 'strong')
+assert.equal(F.fitBand(79).key, 'solid')
+assert.equal(F.fitBand(60).key, 'solid')
+assert.equal(F.fitBand(59).key, 'partial')
+assert.equal(F.fitBand(40).key, 'partial')
+assert.equal(F.fitBand(39).key, 'thin')
 
 // ---- the message a gap turns into ----
 const one = F.buildGapMessage([fit.gaps[0]], { version: 4, jobUrl: 'https://jobs.example/42' })
@@ -146,6 +181,17 @@ assert.ok(
   F.POST_GAP_CSS.includes('blocker') && F.POST_GAP_CSS.includes('minor'),
   'the red convention expresses every severity',
 )
+// The severity vocabulary has one source of truth (lib/shared/severity.js);
+// the client keeps its own literal (it is an IIFE, it cannot import), so this
+// guards the two against drifting — a fourth severity added in one place only.
+for (const sev of SEVERITIES) {
+  if (sev === 'major') continue // the base .dsh-gap rule, no [data-dsh-gap="major"] selector
+  assert.ok(
+    F.POST_GAP_CSS.includes('data-dsh-gap="' + sev + '"'),
+    'the client paints every shared severity: ' + sev,
+  )
+}
+assert.equal(SEVERITIES[0], 'blocker', 'worst first — normalizeFit sorts on this order')
 
 // The marks' explanation is a title tooltip, and a phone has no hover — so a
 // tap (or a click) opens a callout rendered from the title attribute itself.
