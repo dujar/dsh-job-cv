@@ -119,6 +119,28 @@ try {
     'the skill resource is the real contract',
   )
 
+  // ---- the candidate profile: a tool round-trip and a resource ----
+  assert.ok(
+    rlist.result.resources.some((r) => r.uri === 'jobcv://profile'),
+    'the profile is a resource',
+  )
+  const savedProfile = toolJson(
+    await rpc('tools/call', {
+      name: 'jobcv_save_profile',
+      arguments: { text: '# Standing facts\n\n- 7 years, counted from the first dev role' },
+    }),
+  )
+  assert.equal(savedProfile.ok, true, 'the profile saved')
+  const profileRes = await rpc('resources/read', { uri: 'jobcv://profile' })
+  assert.ok(
+    profileRes.result.contents[0].text.includes('counted from 2018'),
+    'the profile resource returns what was saved',
+  )
+  const profileGet = toolJson(
+    await rpc('tools/call', { name: 'jobcv_get', arguments: { what: 'profile' } }),
+  )
+  assert.ok(profileGet.text.includes('7 years'), 'jobcv_get what:profile round-trips')
+
   // ---- the preview page is served with the session baked in ----
   const page = await fetch(ui.url).then((r) => r.text())
   assert.ok(page.includes('"mcp-test-abc123"'), 'the page carries the injected session id')

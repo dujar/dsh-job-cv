@@ -234,6 +234,44 @@ Still open:
   `defineXRoutes` into its own `lib/routes/<domain>.js` is now mechanical if
   the file grows further.
 
+## The fit assessment — sharpened (RESOLVED), and what's left
+
+`normalizeFit` now carries `decidedBy`, `levelRead`, per-gap `kind` and `id`,
+and per-strength `strength` grade; bands are the contract's calibration
+boundaries (80/60/40), shared by the panel and the tracker filter via
+`lib/shared/severity.js`. Gap ids match `data-dsh-gap-id` on the post marks,
+and the CV frame now paints `.dsh-gap` marks too.
+
+Still open:
+
+- **Interactive gap ↔ mark cross-highlight.** The ids line up (data model +
+  contract), but hovering a gap in the fit panel does not yet light up its
+  mark in the post/CV iframe. The wiring is: on gap hover, reach into the
+  iframe and toggle a class on `.dsh-gap[data-dsh-gap-id="gX"]`.
+- **Host-side mark/gap count check.** `app.setFit` could parse the stored
+  post html and warn when the marked ids and the scored gap ids diverge.
+- **`lib/shared/severity.js` for the client.** The store imports it; the
+  client keeps its own literal (IIFE, no imports) with a drift-guard test.
+  A build-time inline into a generated fragment would make it truly one place.
+
+## The candidate profile — RESOLVED (v1)
+
+`profile.json` beside `master.json` (`lib/store/profile.js`): one plain-text
+markdown document of standing facts about the person, last 8 versions.
+`/jobcv/profile` GET/POST, `app.getProfile`/`saveProfile`, MCP
+`jobcv_save_profile` + `jobcv://profile` resource + `jobcv_get what:"profile"`.
+The persona reads it before the first question; the contract's "THE CANDIDATE
+PROFILE" section holds the propose-then-save rule.
+
+Still open:
+
+- **No DSH client panel.** The agent reads and writes it; a DSH user has no
+  UI to see or hand-edit it (the MCP preview could grow a textarea tab). The
+  master CV went through the same v1 → panel arc.
+- **No `notes/profile.md` mirror.** master.json mirrors to
+  `<root>/master/cv/latest.html`; the profile could mirror to
+  `<root>/candidate-profile.md` so it is a plain file a human keeps too.
+
 ## Smaller
 
 - The preview polls `/jobcv/doc` every 2.5s. A push channel (SSE, or the
