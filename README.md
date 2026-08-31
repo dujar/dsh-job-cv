@@ -1,14 +1,28 @@
 # dsh-job-cv
 
-A [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH)
-web-GUI plugin that adds **Job mode**: when the current session runs the
-**job** agent preset, the layout flips — the chat narrows into a sidebar
-column and the main area becomes a live CV preview rendered from an HTML
-document the agent maintains — exportable to PDF from the toolbar (browser
-print dialog, Save as PDF, A4).
+One workflow — **tailoring your CV against a specific job post** — behind two
+front ends:
 
-Scoped to one workflow: tailoring the user's CV against a job post link
-they provide together with their current CV.
+- a [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH)
+  **web-GUI plugin** (_Job mode_: the chat narrows to a sidebar and the main
+  area becomes a live A4 CV preview the agent maintains); and
+- a standalone **[Model Context Protocol](https://modelcontextprotocol.io)
+  server** for any MCP client — **you do not need DSH** — with its own live
+  preview page you keep open beside the conversation.
+
+Both read and write the same state, so an application you start in one shows up
+in the other. If you use Claude Code, Claude Desktop, Cline or any other MCP
+client, jump to [**Also an MCP server**](#also-an-mcp-server).
+
+<p align="center">
+  <img src="docs/screenshots/preview-cv.png" alt="The live CV preview, A4, with a weak bullet marked" width="49%">
+  <img src="docs/screenshots/preview-fit.png" alt="The fit panel: score, what it turns on, the level read, gaps by kind, strengths by grade" width="49%">
+</p>
+<p align="center">
+  <img src="docs/screenshots/preview-post.png" alt="The job post rendered as a page with every unmet requirement marked red" width="49%">
+  <img src="docs/screenshots/preview-review.png" alt="Proposed wording changes with options to accept, swap or skip" width="49%">
+</p>
+<p align="center"><sub>The MCP shell's preview — CV · Fit · Post · Review. The DSH plugin renders the same panels inside the harness.</sub></p>
 
 ## Features
 
@@ -137,40 +151,60 @@ seed at startup, the client bundle on page refresh.
 
 ## Also an MCP server
 
-The same workflow runs as a [Model Context Protocol](https://modelcontextprotocol.io)
-server for any MCP client (Claude Code, Claude Desktop, Cline…), with its own
-live preview page so you watch the CV render exactly as you would inside the
-harness. The DSH plugin is unaffected — both shells read and write the same
-state under `$DSH_HOME/dsh-job-cv`, so an application opened in one shows up
-in the other.
+**No DSH required.** The whole workflow runs as a
+[Model Context Protocol](https://modelcontextprotocol.io) server for any MCP
+client — Claude Code, Claude Desktop, Cline, and anything else that speaks MCP.
+It serves its own live preview page (the four panels shown at the top of this
+README: CV · Fit · Post · Review), so you get the same beside-the-chat view the
+DSH plugin gives without the harness. If you also run DSH, nothing changes —
+both front ends read and write the same state under `$DSH_HOME/dsh-job-cv`, so
+an application you start in one appears in the other.
+
+### Add it
 
 ```sh
-# from a checkout
+# Claude Code, from a checkout
 claude mcp add job-cv -- node /abs/path/to/dsh-job-cv/bin/dsh-job-cv-mcp.js \
-  --root ~/where/your/candidacy/folders/live
+  --root ~/where/your/job-applications/live
 
-# or, once published
-claude mcp add job-cv -- npx -y dsh-job-cv-mcp --root ~/job_candidatures
+# once published to npm
+claude mcp add job-cv -- npx -y dsh-job-cv-mcp --root ~/job-applications
 ```
 
-On start it prints a `preview:` URL on stderr and every `jobcv_context` call
-returns it — open it in a browser and keep it beside the conversation. `--root`
-(or `$DSH_JOB_CV_ROOT`) sets where candidacy folders are written; it defaults
-to `$DSH_HOME/dsh-job-cv/applications`. The session id is the server's — minted
+Other clients: register `node bin/dsh-job-cv-mcp.js` (or `npx -y dsh-job-cv-mcp`)
+as a **stdio** MCP server. Only Node 22.19+ is needed — the package has zero
+runtime dependencies.
+
+### Use it
+
+Ask your assistant to tailor your CV against a posting. It calls `jobcv_context`
+first (which returns a `preview:` URL — **open that in a browser** and keep it
+beside the chat; it also prints on the server's stderr on start), opens the
+candidacy, fetches and stores the post, scores the fit, and saves the tailored
+CV. The preview updates live. Add `?tab=fit` (or `post`, `review`, `cv`) to the
+URL to deep-link a panel; `?live=0` for a static snapshot.
+
+`--root` (or `$DSH_JOB_CV_ROOT`) sets where the per-application folders are
+written — one folder per job, with the CV, cover letter and post inside, that
+you can open and keep outside any tool. Defaults to
+`$DSH_HOME/dsh-job-cv/applications`. The session id is the **server's** — minted
 once, remembered in `$DSH_HOME/dsh-job-cv/mcp-session.json`, injected into every
-call — so there is no id to copy and nothing to get wrong. `--fresh` starts a
+call — so there is nothing to copy and nothing to get wrong. `--fresh` starts a
 new one.
 
-**Tools** (each a thin typed wrapper over the same `/jobcv/*` routes):
-`jobcv_context` · `jobcv_open` · `jobcv_get` · `jobcv_save_cv` ·
-`jobcv_save_letter` · `jobcv_save_master` · `jobcv_set_post` · `jobcv_set_brief` ·
-`jobcv_score` · `jobcv_propose` · `jobcv_switch` · `jobcv_set_status` ·
-`jobcv_restore` · `jobcv_load_joblist`. **Resources:** `jobcv://skill` (the full
-contract) and `jobcv://context`.
+### The surface
+
+15 typed tools, each a thin wrapper over the same `/jobcv/*` operations the
+plugin uses: `jobcv_context` · `jobcv_open` · `jobcv_get` · `jobcv_save_cv` ·
+`jobcv_save_letter` · `jobcv_save_master` · `jobcv_save_profile` ·
+`jobcv_set_post` · `jobcv_set_brief` · `jobcv_score` · `jobcv_propose` ·
+`jobcv_switch` · `jobcv_set_status` · `jobcv_restore` · `jobcv_load_joblist`.
+Resources: `jobcv://skill` (the full contract), `jobcv://profile` (your standing
+facts), `jobcv://context`.
 
 Reading the post is the client's job in this shell — there is no fetch tool
-inside the server. Fetch the posting with the client's own web tool, then
-`jobcv_set_post` the readable text.
+inside the server. Your assistant fetches the posting with its own web tool,
+then calls `jobcv_set_post` with the readable text.
 
 One rough edge: a `jobcv_propose` decision has no chat back-channel here, so the
 preview's Review tab shows a copy-paste message ("Apply proposal p3: c1 → …") to

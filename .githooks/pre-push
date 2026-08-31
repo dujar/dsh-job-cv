@@ -1,0 +1,24 @@
+#!/bin/sh
+# Guard the master branch: no force-push, no delete. Server-side branch
+# protection needs GitHub Pro (private repo) or a public repo — until then
+# this is the guard. Enable it in a clone with:
+#   git config core.hooksPath .githooks
+protected="master"
+z40=0000000000000000000000000000000000000000
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/"$protected")
+      if [ "$local_sha" = "$z40" ]; then
+        echo "pre-push: refusing to DELETE $protected on the remote." >&2
+        exit 1
+      fi
+      if [ "$remote_sha" != "$z40" ] && ! git merge-base --is-ancestor "$remote_sha" "$local_sha"; then
+        echo "pre-push: refusing a NON-FAST-FORWARD (force) push to $protected." >&2
+        echo "          rebase onto origin/$protected, or push a branch and open a PR." >&2
+        exit 1
+      fi
+      ;;
+  esac
+done
+exit 0

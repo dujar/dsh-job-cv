@@ -145,6 +145,9 @@ try {
   const page = await fetch(ui.url).then((r) => r.text())
   assert.ok(page.includes('"mcp-test-abc123"'), 'the page carries the injected session id')
   assert.ok(!page.includes('__JOBCV_SESSION__'), 'the placeholder is replaced')
+  assert.ok(page.includes("get('tab')"), 'the page deep-links a tab from ?tab=')
+  assert.ok(page.includes("get('live')"), 'and supports ?live=0 for a static snapshot')
+  assert.ok(page.includes('.dsh-gap'), 'and paints the gap-mark convention into its iframes')
 
   // ---- unknown method is a JSON-RPC error, not a crash ----
   const bad = await rpc('does/not/exist', {})

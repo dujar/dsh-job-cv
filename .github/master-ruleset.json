@@ -1,0 +1,35 @@
+{
+  "//": "Branch-protection ruleset for `master`. Server-side protection needs a public repo or GitHub Pro; while the repo is private on the Free plan the .githooks/pre-push hook is the guard. Apply this the moment the repo goes public:  gh api -X POST repos/OWNER/REPO/rulesets --input .github/master-ruleset.json",
+  "name": "Protect master",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": { "ref_name": { "include": ["refs/heads/master"], "exclude": [] } },
+  "rules": [
+    { "type": "deletion" },
+    { "type": "non_fast_forward" },
+    {
+      "type": "pull_request",
+      "parameters": {
+        "required_approving_review_count": 0,
+        "dismiss_stale_reviews_on_push": true,
+        "require_code_owner_review": false,
+        "require_last_push_approval": false,
+        "required_review_thread_resolution": false,
+        "automatic_copilot_code_review_enabled": false,
+        "allowed_merge_methods": ["merge", "squash", "rebase"]
+      }
+    },
+    {
+      "type": "required_status_checks",
+      "parameters": {
+        "strict_required_status_checks_policy": true,
+        "do_not_enforce_on_create": false,
+        "required_status_checks": [
+          { "context": "test (22.19)" },
+          { "context": "test (24)" }
+        ]
+      }
+    }
+  ],
+  "bypass_actors": [{ "actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always" }]
+}
