@@ -153,6 +153,148 @@ try {
   const noCv = await withMaster.deltaVsMaster('never-started', 'cv')
   assert.equal(noCv.empty, 'no-document')
 
+  // ---- the incoming delta: what the master GAINED since a CV was tailored ----
+  {
+    const sync = createDocStore(await mkdtemp(join(tmpdir(), 'jobcv-sync-')))
+
+    // no master yet
+    const preMaster = await sync.deltaVsMaster('s', 'cv', 'incoming')
+    assert.equal(preMaster.empty, 'no-master')
+    assert.equal(preMaster.direction, 'incoming')
+
+    // master v1, then a CV tailored from it — its base is stamped to v1, so
+    // there is nothing incoming
+    await sync.saveMaster(null, {
+      html:
+        '<html><body><div class="page"><h1>Jane Doe</h1><p>Senior engineer</p>' +
+        '<ul><li>Led a team of 10</li></ul></div></body></html>',
+      note: 'v1',
+    })
+    assert.equal(
+      await sync.save('s', {
+        html:
+          '<html><body><div class="page"><h1>Jane Doe</h1>' +
+          '<p>Senior engineer — fintech</p><ul><li>Led a team of 10</li></ul></div></body></html>',
+      }),
+      1,
+    )
+    assert.equal(
+      (await sync.get('s')).baseMasterVersion,
+      1,
+      'a fresh CV is stamped with the master HEAD',
+    )
+    const level = await sync.deltaVsMaster('s', 'cv', 'incoming')
+    assert.equal(level.empty, 'in-sync')
+    assert.equal(level.baseMasterVersion, 1)
+    assert.equal(level.masterVersion, 1)
+    assert.equal(level.baseInferred, false)
+
+    // master moves on: v2 adds a bullet, v3 rewrites the summary
+    await sync.saveMaster(null, {
+      html:
+        '<html><body><div class="page"><h1>Jane Doe</h1><p>Senior engineer</p>' +
+        '<ul><li>Led a team of 10</li><li>Shipped the billing rewrite</li></ul></div></body></html>',
+      note: 'v2 — billing bullet',
+    })
+    await sync.saveMaster(null, {
+      html:
+        '<html><body><div class="page"><h1>Jane Doe</h1><p>Staff engineer, 12 years</p>' +
+        '<ul><li>Led a team of 10</li><li>Shipped the billing rewrite</li></ul></div></body></html>',
+      note: 'v3 — staff, years',
+    })
+
+    const incoming = await sync.deltaVsMaster('s', 'cv', 'incoming')
+    assert.equal(incoming.empty, undefined)
+    assert.equal(incoming.direction, 'incoming')
+    assert.equal(
+      incoming.baseMasterVersion,
+      1,
+      'diff runs from the version this CV was tailored from',
+    )
+    assert.equal(incoming.masterVersion, 3)
+    assert.equal(incoming.targetVersion, 1, 'and it is about CV v1')
+    assert.equal(incoming.baseInferred, false)
+    const inTexts = incoming.changes.map((c) => c.text)
+    assert.ok(
+      inTexts.includes('Shipped the billing rewrite'),
+      'a bullet the master gained reads as an addition',
+    )
+    assert.ok(inTexts.includes('Staff engineer, 12 years'), 'a reworded master line reads as add')
+    assert.ok(inTexts.includes('Senior engineer'), 'the line it replaced reads as a removal')
+
+    // a sync save reconciles the CV: pass the master version diffed against
+    assert.equal(
+      await sync.save('s', {
+        html:
+          '<html><body><div class="page"><h1>Jane Doe</h1><p>Staff engineer, 12 years — fintech</p>' +
+          '<ul><li>Led a team of 10</li><li>Shipped the billing rewrite</li></ul></div></body></html>',
+        note: 'Synced master v3',
+        baseMasterVersion: 3,
+      }),
+      2,
+    )
+    assert.equal((await sync.get('s')).baseMasterVersion, 3)
+    assert.equal((await sync.deltaVsMaster('s', 'cv', 'incoming')).empty, 'in-sync')
+
+    // an ordinary tailoring save does NOT move the lineage marker
+    await sync.save('s', {
+      html: '<html><body><p>tweaked</p></body></html>',
+      note: 'reworded a bullet',
+    })
+    assert.equal(
+      (await sync.get('s')).baseMasterVersion,
+      3,
+      'a normal save leaves the marker alone',
+    )
+
+    // a restore of the CV body is not a re-reconciliation
+    await sync.saveMaster(null, { html: '<p>v4</p>', note: 'v4' })
+    const restored = await sync.restore('s', 2)
+    assert.ok(restored > 0)
+    assert.equal((await sync.get('s')).baseMasterVersion, 3, 'restore keeps the lineage marker')
+  }
+
+  // ---- a CV that predates the marker: the base is inferred, and said so ----
+  {
+    const legacyDir = await mkdtemp(join(tmpdir(), 'jobcv-legacy-'))
+    const { writeFile: wf, mkdir: mkd } = await import('node:fs/promises')
+    await mkd(join(legacyDir, 'sessions'), { recursive: true })
+    // a session file with no baseMasterVersion at all — an old build's record
+    await wf(
+      join(legacyDir, 'sessions', 'old.json'),
+      JSON.stringify({
+        version: 1,
+        html: '<html><body><div class="page"><p>old tailored CV</p></div></body></html>',
+      }),
+      'utf8',
+    )
+    const legacy = createDocStore(legacyDir)
+    assert.equal((await legacy.get('old')).baseMasterVersion, 0)
+    await legacy.saveMaster(null, {
+      html: '<html><body><div class="page"><p>master one</p></div></body></html>',
+      note: 'm1',
+    })
+    await legacy.saveMaster(null, {
+      html: '<html><body><div class="page"><p>master two</p></div></body></html>',
+      note: 'm2',
+    })
+    const inf = await legacy.deltaVsMaster('old', 'cv', 'incoming')
+    assert.equal(inf.baseInferred, true, 'no stamped base — inferred from the oldest master kept')
+    assert.equal(inf.baseMasterVersion, 1)
+    assert.equal(inf.masterVersion, 2)
+    assert.ok(inf.changes.some((c) => c.text === 'master two'))
+    await rm(legacyDir, { recursive: true, force: true })
+  }
+
+  // ---- a master exists but no CV: nothing to sync into ----
+  {
+    const bare = createDocStore(await mkdtemp(join(tmpdir(), 'jobcv-bare-')))
+    await bare.saveMaster(null, { html: '<p>a master</p>', note: 'm' })
+    const none = await bare.deltaVsMaster('never', 'cv', 'incoming')
+    assert.equal(none.empty, 'no-document')
+    assert.equal(none.direction, 'incoming')
+  }
+
   // ---- a corrupt master.json raises instead of inviting an overwrite ----
   const broken = await mkdtemp(join(tmpdir(), 'jobcv-master-broken-'))
   try {

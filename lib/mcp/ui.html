@@ -5,59 +5,99 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Job CV — preview</title>
     <style>
-      /* ---- theme: light is the base; dark redefines the same tokens ---- */
+      /* ---- theme: an editor's desk. Light is warm paper, dark is lamplight
+         on the same desk — one token set, two readings. Type is serif-led
+         (the documents are prose) with a quiet sans for the control surface
+         and mono where line identity matters: versions, stats, the diff. ---- */
       :root {
-        --bg: #f4f4f5;
-        --panel: #ffffff;
-        --panel-2: #fafafa;
-        --ink: #18181b;
-        --ink-soft: #3f3f46;
-        --muted: #71717a;
-        --line: #e4e4e7;
-        --line-2: #d4d4d8;
-        --accent: #2563eb;
-        --accent-soft: #eff6ff;
-        --blocker: #dc2626;
-        --major: #b45309;
-        --minor: #4d7c0f;
-        --ok: #15803d;
-        --shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.06);
+        --serif: 'Iowan Old Style', Georgia, 'Palatino Linotype', 'Book Antiqua', 'Times New Roman', serif;
+        --sans: 'Avenir Next', 'Segoe UI', 'Helvetica Neue', 'Noto Sans', Arial, sans-serif;
+        --mono: ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+
+        --bg: #f2eee3;
+        --panel: #fbf8f0;
+        --panel-2: #f4f0e4;
+        --ink: #221d13;
+        --ink-soft: #4c4535;
+        --muted: #8b8370;
+        --line: #e3dcc9;
+        --line-2: #d1c9b0;
+        --accent: #2f5d8a;
+        --accent-ink: #fdfcf8;
+        --accent-soft: #e6ecdf;
+        --blocker: #b3452c;
+        --major: #a06a1c;
+        --minor: #6f7d38;
+        --ok: #3e7d52;
+
+        --d-add-bg: #e9efdd;
+        --d-add-ink: #33684a;
+        --d-add-mark: #cde0bd;
+        --d-del-bg: #f6e8de;
+        --d-del-ink: #97422a;
+        --d-del-mark: #ecd2c2;
+        --d-hunk: #efe9d8;
+        --d-fold: #f0ebdc;
+
+        --shadow: 0 1px 2px rgba(60, 50, 20, 0.06), 0 1px 4px rgba(60, 50, 20, 0.05);
       }
       @media (prefers-color-scheme: dark) {
         :root:not([data-theme='light']) {
-          --bg: #0d0d0f;
-          --panel: #17171a;
-          --panel-2: #1d1d21;
-          --ink: #f4f4f5;
-          --ink-soft: #d4d4d8;
-          --muted: #9b9ba3;
-          --line: #2a2a30;
-          --line-2: #3a3a42;
-          --accent: #6ea8ff;
-          --accent-soft: #17233a;
-          --blocker: #f87171;
-          --major: #fbbf24;
-          --minor: #a3e635;
-          --ok: #4ade80;
-          --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+          --bg: #16130e;
+          --panel: #1f1b15;
+          --panel-2: #262119;
+          --ink: #ede7d8;
+          --ink-soft: #d2c9b5;
+          --muted: #9c9280;
+          --line: #363021;
+          --line-2: #4b4432;
+          --accent: #8fb4de;
+          --accent-ink: #1c2634;
+          --accent-soft: #2b3340;
+          --blocker: #e28c72;
+          --major: #d9a75c;
+          --minor: #b3bd7d;
+          --ok: #8ccb97;
+
+          --d-add-bg: rgba(140, 203, 151, 0.12);
+          --d-add-ink: #a4d8ae;
+          --d-add-mark: rgba(140, 203, 151, 0.3);
+          --d-del-bg: rgba(226, 140, 114, 0.11);
+          --d-del-ink: #e6ab95;
+          --d-del-mark: rgba(226, 140, 114, 0.3);
+          --d-hunk: rgba(237, 231, 216, 0.05);
+          --d-fold: rgba(237, 231, 216, 0.03);
+
+          --shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
         }
       }
       :root[data-theme='dark'] {
-        --bg: #0d0d0f;
-        --panel: #17171a;
-        --panel-2: #1d1d21;
-        --ink: #f4f4f5;
-        --ink-soft: #d4d4d8;
-        --muted: #9b9ba3;
-        --line: #2a2a30;
-        --line-2: #3a3a42;
-        --accent: #6ea8ff;
-        --accent-soft: #17233a;
-        --blocker: #f87171;
-        --major: #fbbf24;
-        --minor: #a3e635;
-        --ok: #4ade80;
-        --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+        --bg: #16130e;
+        --panel: #1f1b15;
+        --panel-2: #262119;
+        --ink: #ede7d8;
+        --ink-soft: #d2c9b5;
+        --muted: #9c9280;
+        --line: #363021;
+        --line-2: #4b4432;
+        --accent: #8fb4de;
+        --accent-ink: #1c2634;
+        --accent-soft: #2b3340;
+        --blocker: #e28c72;
+        --major: #d9a75c;
+        --minor: #b3bd7d;
+        --ok: #8ccb97;
+
+        --d-add-bg: rgba(140, 203, 151, 0.12);
+        --d-add-ink: #a4d8ae;
+        --d-add-mark: rgba(140, 203, 151, 0.3);
+        --d-del-bg: rgba(226, 140, 114, 0.11);
+        --d-del-ink: #e6ab95;
+        --d-del-mark: rgba(226, 140, 114, 0.3);
+        --d-hunk: rgba(237, 231, 216, 0.05);
+        --d-fold: rgba(237, 231, 216, 0.03);
+
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
       }
 
       * { box-sizing: border-box; }
@@ -65,10 +105,12 @@
       body {
         background: var(--bg);
         color: var(--ink);
-        font: 14px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        font: 13.5px/1.55 var(--sans);
         display: flex;
         flex-direction: column;
       }
+      ::selection { background: var(--accent-soft); }
+      :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 2px; }
 
       /* ---- header ---- */
       header {
@@ -77,8 +119,8 @@
         padding: 9px 16px 8px;
       }
       .h-top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-      .h-top h1 { font-size: 13px; margin: 0; font-weight: 700; letter-spacing: 0.01em; }
-      .h-title { font-size: 13px; font-weight: 600; color: var(--ink); }
+      .h-top h1 { font: 700 15px/1.2 var(--serif); margin: 0; letter-spacing: 0.01em; }
+      .h-title { font: 600 14px/1.3 var(--serif); color: var(--ink); }
       .h-title a { color: var(--muted); text-decoration: none; margin-left: 6px; font-weight: 400; }
       .h-title a:hover { color: var(--accent); }
       .h-spacer { flex: 1; }
@@ -108,14 +150,15 @@
       nav { display: flex; gap: 2px; padding: 0 12px; background: var(--panel); border-bottom: 1px solid var(--line); overflow-x: auto; }
       nav button {
         appearance: none; border: 0; background: transparent; cursor: pointer; white-space: nowrap;
-        padding: 9px 13px; font: inherit; color: var(--muted); border-bottom: 2px solid transparent;
+        padding: 9px 13px; font: inherit; font-size: 12.5px; letter-spacing: 0.01em;
+        color: var(--muted); border-bottom: 2px solid transparent;
       }
-      nav button:hover { color: var(--ink-soft); }
+      nav button:hover { color: var(--ink-soft); border-bottom-color: var(--line-2); }
       nav button.active { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
       nav button .badge {
         display: inline-block; min-width: 17px; padding: 0 5px; margin-left: 5px;
         border-radius: 9px; background: var(--line); color: var(--ink-soft);
-        font-size: 11px; font-weight: 600; text-align: center;
+        font: 600 11px var(--mono); text-align: center;
       }
       nav button .badge.alert { background: var(--blocker); color: #fff; }
 
@@ -123,20 +166,121 @@
       .wrap { max-width: 920px; margin: 0 auto; }
       .doc-frame {
         width: 100%; max-width: 920px; margin: 0 auto; background: #fff;
-        border: 1px solid var(--line); border-radius: 6px; box-shadow: var(--shadow); overflow: hidden;
+        border: 1px solid var(--line-2); border-radius: 4px; box-shadow: var(--shadow); overflow: hidden;
       }
       iframe { width: 100%; border: 0; display: block; min-height: 80vh; background: #fff; }
+
+      /* master CV beside the tailored one */
+      .sxs { display: flex; gap: 14px; max-width: 1500px; margin: 0 auto 14px; align-items: flex-start; }
+      .sxs > figure { flex: 1 1 0; min-width: 0; margin: 0; }
+      .sxs figcaption {
+        font: 600 10.5px var(--sans); text-transform: uppercase; letter-spacing: 0.07em;
+        color: var(--muted); margin-bottom: 5px;
+      }
+      .sxs .doc-frame { max-width: none; margin: 0; }
+      .sxs iframe { min-height: 62vh; }
+      @media (max-width: 900px) { .sxs { flex-direction: column; } .sxs iframe { min-height: 80vh; } }
+
+      /* ---- the two diffs: segmented switch + one diff card ---- */
+      .segwrap { max-width: 920px; margin: 0 auto 12px; }
+      .seg { display: inline-flex; border: 1px solid var(--line-2); border-radius: 7px; overflow: hidden; background: var(--panel); }
+      .seg-b {
+        appearance: none; border: 0; border-right: 1px solid var(--line); background: transparent;
+        padding: 7px 14px; font: 600 12.5px var(--sans); color: var(--muted); cursor: pointer;
+      }
+      .seg-b:last-child { border-right: 0; }
+      .seg-b:hover { color: var(--ink); }
+      .seg-b.on { background: var(--accent-soft); color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
+      .seg-n { font: 700 11px var(--mono); margin-left: 7px; letter-spacing: 0; }
+
+      .dcard { padding: 0; overflow: hidden; }
+      .dc-head {
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        padding: 10px 14px; border-bottom: 1px solid var(--line);
+      }
+      .dc-file { font: 600 12.5px/1.4 var(--mono); color: var(--ink); }
+      .dc-file .mut { color: var(--muted); font-weight: 400; }
+      .dc-file .arrow { color: var(--muted); font-weight: 400; padding: 0 2px; }
+      .dc-cap { padding: 9px 14px 0; color: var(--muted); font-size: 12.5px; max-width: 78ch; }
+      .dc-cap b { color: var(--ink-soft); font-weight: 600; }
+      .dstats { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font: 700 12px var(--mono); }
+      .pm-a { color: var(--d-add-ink); }
+      .pm-d { color: var(--d-del-ink); }
+      .dbar {
+        width: 68px; height: 8px; border-radius: 4px; overflow: hidden;
+        background: var(--d-del-ink); display: inline-block; opacity: 0.85;
+      }
+      .dbar i { display: block; height: 100%; background: var(--d-add-ink); }
+      .dc-foot { padding: 10px 14px 12px; border-top: 1px solid var(--line); margin-top: 10px; }
+      .d-insync { padding: 14px 16px; color: var(--ink-soft); font-size: 13.5px; }
+      .d-insync .oktick { color: var(--ok); font-weight: 700; margin-right: 4px; }
+
+      /* the diff itself: hunk headers, numbered +/- rows, fold rows */
+      .diff { margin: 10px 0 4px; font: 12.3px/1.65 var(--mono); }
+      .dhh {
+        display: flex; gap: 10px; align-items: baseline; padding: 4px 14px;
+        background: var(--d-hunk); color: var(--muted); font-size: 11.5px;
+        white-space: nowrap; overflow: hidden;
+        position: sticky; top: 0; z-index: 2;
+      }
+      .dhh .at { color: var(--accent); }
+      .dhh .sec { color: var(--ink-soft); font-style: italic; overflow: hidden; text-overflow: ellipsis; }
+      .dl { display: grid; grid-template-columns: 3.5ch 3.5ch 1.5ch 1fr; min-height: 20px; }
+      .dl .no, .dl .nn {
+        text-align: right; padding-right: 5px; color: var(--muted);
+        user-select: none; font-variant-numeric: tabular-nums; opacity: 0.85;
+      }
+      .dl .ds { text-align: center; user-select: none; }
+      .dl .dt { padding: 0 12px 0 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
+      .d-ctx { color: var(--ink-soft); }
+      .d-add { background: var(--d-add-bg); }
+      .d-add .ds, .d-add .dt { color: var(--d-add-ink); }
+      .d-add .nn { color: var(--d-add-ink); }
+      .d-del { background: var(--d-del-bg); }
+      .d-del .ds, .d-del .dt { color: var(--d-del-ink); }
+      .d-del .no { color: var(--d-del-ink); }
+      .wm { font-style: normal; font-weight: 700; border-radius: 2px; padding: 0 1px; }
+      .d-add .wm { background: var(--d-add-mark); }
+      .d-del .wm { background: var(--d-del-mark); }
+      .d-fold { display: none; }
+      .d-fold.open { display: grid; }
+      .dfold {
+        display: block; width: 100%; appearance: none; cursor: pointer;
+        border: 0; border-top: 1px dashed var(--line-2); border-bottom: 1px dashed var(--line-2);
+        background: var(--d-fold); color: var(--muted);
+        font: 500 11px/1 var(--sans); padding: 5px; text-align: center;
+      }
+      .dfold:hover { color: var(--accent); }
+
+      /* the compact fallback list (server-shipped changes) while / until the
+         client-side hunk diff can be built */
+      .dlist { margin-top: 8px; }
+      .dcard .dlist { margin: 10px 16px 12px; }
+      .drow { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; border-top: 1px solid var(--line); }
+      .drow:first-child { border-top: 0; }
+      .drow .t { font-size: 13px; line-height: 1.5; word-break: break-word; }
+      .dchip {
+        flex: none; font-size: 11px; font-weight: 700; line-height: 16px; min-width: 16px;
+        text-align: center; padding: 0 4px; border-radius: 4px; border: 1px solid currentColor;
+      }
+      .dchip.add { color: var(--ok); }
+      .dchip.del { color: var(--blocker); }
+
       .card {
         background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
         padding: 15px 16px; max-width: 920px; margin: 0 auto 14px; box-shadow: var(--shadow);
       }
-      .card h3 { margin: 0 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
-      .empty { color: var(--muted); text-align: center; padding: 44px 0; }
+      .card h3 {
+        margin: 0 0 10px; font: 700 11px var(--sans); text-transform: uppercase;
+        letter-spacing: 0.09em; color: var(--muted);
+      }
+      .empty { color: var(--ink-soft); text-align: center; padding: 44px 20px; font: 400 16px/1.5 var(--serif); }
+      .empty .sub { font: 400 13px/1.5 var(--sans); color: var(--muted); }
       .empty .act { margin-top: 12px; }
 
-      .score { font-size: 44px; font-weight: 800; line-height: 1; }
-      .score span { font-size: 16px; color: var(--muted); font-weight: 600; }
-      .verdict { color: var(--ink-soft); margin-top: 8px; max-width: 62ch; }
+      .score { font: 800 52px/1 var(--serif); letter-spacing: -0.01em; font-variant-numeric: lining-nums; }
+      .score span { font: 600 15px var(--sans); color: var(--muted); letter-spacing: 0; }
+      .verdict { font: 400 15px/1.55 var(--serif); color: var(--ink-soft); margin-top: 10px; max-width: 62ch; }
       .kv { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
       .kv b { color: var(--ink-soft); font-weight: 600; }
 
@@ -146,7 +290,7 @@
       .stat {
         border: 1px solid var(--line); border-radius: 7px; padding: 10px 12px; background: var(--panel-2);
       }
-      .stat .n { font-size: 20px; font-weight: 700; }
+      .stat .n { font: 700 20px/1.2 var(--serif); font-variant-numeric: lining-nums; }
       .stat .l { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
       .stat.yes .n { color: var(--ok); }
       .stat.no .n { color: var(--muted); }
@@ -166,7 +310,7 @@
       .sub { color: var(--muted); font-size: 13px; }
       .fix { font-size: 13px; margin-top: 4px; color: var(--accent); }
 
-      pre.post { white-space: pre-wrap; word-wrap: break-word; font: 13px/1.6 ui-monospace, monospace; margin: 0; }
+      pre.post { white-space: pre-wrap; word-wrap: break-word; font: 13px/1.6 var(--mono); margin: 0; }
       table { border-collapse: collapse; width: 100%; }
       th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); font-size: 13px; }
       th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
@@ -179,15 +323,16 @@
       .opt .label { font-weight: 600; font-size: 12px; margin-bottom: 2px; }
       .relay {
         background: var(--panel-2); border: 1px dashed var(--line-2); border-radius: 6px;
-        padding: 10px; margin-top: 12px; font: 12px/1.5 ui-monospace, monospace; white-space: pre-wrap;
+        padding: 10px; margin-top: 12px; font: 12px/1.5 var(--mono); white-space: pre-wrap;
       }
 
       button.act, select.act {
         appearance: none; border: 1px solid var(--line-2); background: var(--panel); color: var(--ink);
-        border-radius: 6px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer;
+        border-radius: 6px; padding: 6px 12px; font: 500 12.5px var(--sans); cursor: pointer;
+        transition: border-color 0.12s, background 0.12s;
       }
       button.act:hover { border-color: var(--muted); }
-      button.act.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+      button.act.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
       button.act.small { padding: 3px 9px; font-size: 12px; }
       button.act:disabled { opacity: 0.5; cursor: default; }
       .toolbar { max-width: 920px; margin: 0 auto 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
@@ -202,7 +347,7 @@
 
       /* ---- applications drawer (a discreet button opens it) ---- */
       #apps-scrim {
-        position: fixed; inset: 0; background: rgba(0, 0, 0, 0.35); z-index: 40;
+        position: fixed; inset: 0; background: rgba(20, 15, 5, 0.4); z-index: 40;
         opacity: 0; pointer-events: none; transition: opacity 0.15s;
       }
       #apps-scrim.open { opacity: 1; pointer-events: auto; }
@@ -212,10 +357,10 @@
         transform: translateX(-100%); transition: transform 0.16s ease;
         display: flex; flex-direction: column;
       }
-      #apps-drawer.open { transform: none; box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25); }
+      #apps-drawer.open { transform: none; box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3); }
       #apps-drawer .d-head { padding: 12px 14px 8px; border-bottom: 1px solid var(--line); }
       #apps-drawer .d-head .row1 { display: flex; align-items: center; gap: 8px; }
-      #apps-drawer .d-head h2 { font-size: 13px; margin: 0; font-weight: 700; }
+      #apps-drawer .d-head h2 { font: 700 15px var(--serif); margin: 0; }
       #apps-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
       #apps-list { flex: 1; overflow-y: auto; overflow-x: hidden; position: relative; }
       #apps-spacer { position: relative; width: 100%; }
@@ -232,17 +377,93 @@
 
       dialog {
         border: 1px solid var(--line-2); border-radius: 10px; background: var(--panel); color: var(--ink);
-        padding: 0; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); max-width: 460px; width: 92vw;
+        padding: 0; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35); max-width: 460px; width: 92vw;
       }
-      dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+      dialog::backdrop { background: rgba(20, 15, 5, 0.5); }
       .dlg-body { padding: 16px 18px; }
-      .dlg-body h3 { margin: 0 0 4px; font-size: 15px; }
+      .dlg-body h3 { margin: 0 0 4px; font: 700 17px var(--serif); }
       .dlg-body textarea, .dlg-body input {
         width: 100%; margin-top: 8px; padding: 8px 10px; border: 1px solid var(--line-2);
         border-radius: 6px; background: var(--panel-2); color: var(--ink); font: inherit; resize: vertical;
       }
       .dlg-foot { display: flex; gap: 8px; justify-content: flex-end; padding: 12px 18px; border-top: 1px solid var(--line); }
-      .marked-current { font-size: 12px; color: var(--muted); background: var(--panel-2); border-radius: 5px; padding: 6px 8px; margin-top: 8px; max-height: 120px; overflow: auto; }
+      .marked-current { font: 12px/1.5 var(--mono); color: var(--muted); background: var(--panel-2); border-radius: 5px; padding: 6px 8px; margin-top: 8px; max-height: 120px; overflow: auto; }
+
+      @media (prefers-reduced-motion: reduce) {
+        #apps-drawer, #apps-scrim, button.act { transition: none; }
+      }
+
+      /* ---- Jobs workbench: search + facets over every tracked candidacy,
+         a fit-ranked leaderboard and a sortable table ---- */
+      .jw { max-width: 960px; margin: 0 auto; }
+      .jw-deck { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+      .jw-line { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+      .jw-search {
+        flex: 1; min-width: 200px; display: flex; align-items: center; gap: 6px;
+        border: 1px solid var(--line-2); border-radius: 7px; background: var(--panel); padding: 0 8px;
+      }
+      .jw-search input {
+        flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--ink);
+        font: inherit; font-size: 13px; line-height: 30px;
+      }
+      .jw-search .x { border: 0; background: transparent; color: var(--muted); cursor: pointer; font: inherit; padding: 0 2px; }
+      .jw-count { font: 600 11px var(--mono); color: var(--muted); white-space: nowrap; margin-left: auto; }
+      .jw-fchip {
+        appearance: none; border: 1px solid var(--line-2); background: transparent; color: var(--muted);
+        border-radius: 999px; font: inherit; font-size: 11px; padding: 1px 9px; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 5px;
+      }
+      .jw-fchip:hover { color: var(--ink-soft); }
+      .jw-fchip.on { border-color: var(--accent); color: var(--ink); background: var(--accent-soft); font-weight: 600; }
+      .jw-fchip .d { width: 7px; height: 7px; border-radius: 999px; flex: none; }
+      .jw-reset { border: 0; background: transparent; color: var(--accent); text-decoration: underline; cursor: pointer; font: inherit; font-size: 11px; }
+      .jw select.act { padding: 3px 8px; max-width: 160px; }
+
+      .lb { display: flex; flex-direction: column; gap: 6px; }
+      .lb-row {
+        display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+        border: 1px solid var(--line); border-radius: 8px; background: var(--panel); cursor: pointer;
+        transition: border-color 0.12s;
+      }
+      .lb-row:hover { border-color: var(--line-2); }
+      .lb-row.cur { border-color: var(--accent); background: var(--accent-soft); }
+      .lb-rank { font: 700 12px var(--mono); color: var(--muted); min-width: 22px; text-align: right; flex: none; }
+      .lb-fit { font: 800 22px/1 var(--serif); min-width: 44px; text-align: right; font-variant-numeric: lining-nums; flex: none; }
+      .lb-mid { flex: 1; min-width: 0; }
+      .lb-co { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .lb-ro { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .lb-tags { display: flex; gap: 5px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
+      .lb-tags .t { font: 600 10px var(--mono); color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+      .lb-band { font-size: 10px; color: var(--muted); }
+      a.jw-src { font: 500 10px var(--sans); color: var(--accent); text-decoration: none; white-space: nowrap; }
+      a.jw-src:hover { text-decoration: underline; }
+      .jw-sub { font: 600 11px var(--sans); text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 16px 0 6px; }
+
+      .jw-table th button {
+        appearance: none; border: 0; background: transparent; color: inherit; font: inherit;
+        text-transform: inherit; letter-spacing: inherit; cursor: pointer; padding: 0;
+      }
+      .jw-table th button.on { color: var(--ink); }
+      .jw-table tbody tr { cursor: pointer; }
+      .jw-table tbody tr:hover td { background: var(--panel-2); }
+      .jw-table tbody tr.cur td { background: var(--accent-soft); }
+      .jw-empty { text-align: center; color: var(--muted); padding: 40px 20px; font: 400 15px/1.5 var(--serif); }
+
+      /* editable stage tag — a select styled like the .pill it replaces */
+      select.jw-status {
+        appearance: none; -webkit-appearance: none; flex: none;
+        border: 1px solid var(--line-2); border-radius: 999px;
+        padding: 1px 9px; font: 600 11px var(--sans); line-height: 1.5;
+        background: var(--line); color: var(--ink-soft); cursor: pointer;
+        transition: border-color 0.12s, background 0.12s, color 0.12s;
+      }
+      select.jw-status:hover { border-color: var(--muted); }
+      select.jw-status:disabled { opacity: 0.5; cursor: progress; }
+      select.jw-status.applied { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+      select.jw-status.interview { background: color-mix(in srgb, var(--major) 20%, transparent); color: var(--major); border-color: var(--major); }
+      select.jw-status.offer { background: color-mix(in srgb, var(--ok) 20%, transparent); color: var(--ok); border-color: var(--ok); }
+      select.jw-status.rejected { background: color-mix(in srgb, var(--blocker) 16%, transparent); color: var(--blocker); border-color: var(--blocker); }
+      select.jw-status option { background: var(--panel); color: var(--ink); font-weight: 400; }
     </style>
   </head>
   <body>
@@ -262,7 +483,9 @@
       <button data-tab="cv">CV <span class="badge" id="b-cv">0</span></button>
       <button data-tab="letter">Letter <span class="badge" id="b-letter">–</span></button>
       <button data-tab="post">Post <span class="badge" id="b-post">–</span></button>
+      <button data-tab="master">Master <span class="badge" id="b-master">–</span></button>
       <button data-tab="fit">Fit <span class="badge" id="b-fit">–</span></button>
+      <button data-tab="jobs">Jobs <span class="badge" id="b-jobs">0</span></button>
       <button data-tab="review">Review <span class="badge" id="b-review">0</span></button>
     </nav>
     <main><div id="view"></div></main>
@@ -296,10 +519,39 @@
     <script>
       const SESSION = __JOBCV_SESSION__;
       const q = (s) => '?session=' + encodeURIComponent(SESSION) + (s || '');
-      const TABS = ['overview', 'cv', 'letter', 'post', 'fit', 'review'];
+      const TABS = ['overview', 'cv', 'letter', 'post', 'master', 'fit', 'jobs', 'review'];
+      const STATUSES = ['drafting', 'applied', 'interview', 'offer', 'rejected'];
       const wanted = new URLSearchParams(location.search).get('tab');
       const LIVE = new URLSearchParams(location.search).get('live') !== '0';
-      const state = { doc: null, letter: null, post: null, brief: null, apps: null, requests: [], tab: TABS.includes(wanted) ? wanted : 'overview', picks: {}, marking: false };
+      let masterSxs = true;
+      try { masterSxs = localStorage.getItem('jobcv-master-sxs') !== '0'; } catch (e) {}
+      let masterView = 'sync';
+      try { masterView = localStorage.getItem('jobcv-master-view') === 'tailor' ? 'tailor' : 'sync'; } catch (e) {}
+
+      /* The Jobs workbench arrangement — view, sort and facets persist per
+         browser; the typed query deliberately does not (a stale search on
+         reload reads as "my jobs vanished"). */
+      const JOBS_SORTS = ['fitScore', 'company', 'jobTitle', 'status', 'activity'];
+      const JOBS_BANDS = ['any', 'scored', 'unscored', 'strong', 'solid', 'partial', 'thin'];
+      function loadJobsWB() {
+        const fresh = { view: 'leaderboard', sortField: 'fitScore', sortDir: 'desc', statuses: [], has: [], company: '', band: 'any' };
+        try {
+          const p = JSON.parse(localStorage.getItem('jobcv-jobs-wb') || 'null');
+          if (!p || typeof p !== 'object') return fresh;
+          return {
+            view: p.view === 'table' ? 'table' : 'leaderboard',
+            sortField: JOBS_SORTS.indexOf(p.sortField) !== -1 ? p.sortField : 'fitScore',
+            sortDir: p.sortDir === 'asc' ? 'asc' : 'desc',
+            statuses: Array.isArray(p.statuses) ? p.statuses.filter((s) => STATUSES.indexOf(s) !== -1) : [],
+            has: Array.isArray(p.has) ? p.has.filter((h) => ['cv', 'letter', 'post'].indexOf(h) !== -1) : [],
+            company: typeof p.company === 'string' ? p.company : '',
+            band: JOBS_BANDS.indexOf(p.band) !== -1 ? p.band : 'any',
+          };
+        } catch (e) { return fresh; }
+      }
+      function saveJobsWB() { try { localStorage.setItem('jobcv-jobs-wb', JSON.stringify(state.jobsWB)); } catch (e) {} }
+
+      const state = { doc: null, letter: null, post: null, brief: null, master: null, masterDelta: null, masterDeltaOut: null, apps: null, requests: [], tab: TABS.includes(wanted) ? wanted : 'overview', picks: {}, marking: false, masterSxs: masterSxs, masterView: masterView, baseReady: 0, jobsQ: '', jobsWB: loadJobsWB() };
       const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
       const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 
@@ -363,6 +615,35 @@
         render();
       }
 
+      /* A fingerprint of everything render() reads. poll() runs on a timer;
+         without this it rebuilds the view — and its <iframe>s, which reload
+         and jump to the top — every few seconds even when nothing changed. */
+      let lastSig = '';
+      function renderSig() {
+        const d = state.doc || {};
+        const L = state.letter;
+        const P = state.post;
+        const M = state.master;
+        const md = state.masterDelta;
+        const mo = state.masterDeltaOut;
+        return JSON.stringify([
+          state.tab, state.marking, state.masterSxs, state.masterView, state.baseReady, state.picks,
+          d.version, d.updatedAt, d.note, d.masterVersion, d.baseMasterVersion,
+          d.postChars, d.status, d.workspace, d.jobUrl, d.historyDepth,
+          d.fit ? [d.fit.score, d.fit.basedOnVersion, d.fit.basedOnLetter] : 0,
+          d.proposal ? d.proposal.id : 0,
+          L ? [L.version, (L.html || '').length] : 0,
+          P ? [(P.html || '').length, (P.text || '').length] : 0,
+          state.brief ? 1 : 0,
+          M ? [M.version, M.note || ''] : 0,
+          md ? [md.empty, md.added, md.removed, md.masterVersion, md.baseMasterVersion] : 0,
+          mo ? [mo.empty, mo.added, mo.removed, mo.masterVersion] : 0,
+          (state.apps || []).map((a) => (a.fitScore == null ? 'x' : a.fitScore) + '/' + ((a.application && a.application.status) || 'd') + '/' + (a.activity || 0) + '/' + (a.cvVersion || 0)).join(','),
+          state.jobsQ, JSON.stringify(state.jobsWB),
+          state.requests.length,
+        ]);
+      }
+
       function renderHeader() {
         const d = state.doc || {};
         const t = document.getElementById('h-title');
@@ -387,7 +668,12 @@
         document.getElementById('b-cv').textContent = 'v' + (d.version || 0);
         document.getElementById('b-letter').textContent = d.letter ? 'v' + d.letter.version : '–';
         document.getElementById('b-post').textContent = d.postChars ? '✓' : '–';
+        const mb = document.getElementById('b-master');
+        const syncable = d.masterVersion && d.version && d.masterVersion > (d.baseMasterVersion || 0);
+        mb.textContent = d.masterVersion ? (syncable ? 'sync' : 'v' + d.masterVersion) : '–';
+        mb.className = 'badge' + (syncable ? ' alert' : '');
         document.getElementById('b-fit').textContent = d.fit ? d.fit.score : '–';
+        document.getElementById('b-jobs').textContent = (state.apps || []).length;
         const rb = document.getElementById('b-review');
         rb.textContent = d.proposal ? d.proposal.changes.length : '0';
         document.getElementById('apps-btn-n').textContent = (state.apps || []).length;
@@ -411,18 +697,27 @@
 
       async function poll() {
         try {
-          const [letter, post, brief, apps] = await Promise.all([
+          const [letter, post, brief, master, masterDelta, masterDeltaOut, apps] = await Promise.all([
             fetch('/jobcv/letter' + q()).then((r) => r.json()).catch(() => null),
             fetch('/jobcv/post' + q()).then((r) => r.json()).catch(() => null),
             fetch('/jobcv/brief' + q()).then((r) => r.json()).catch(() => null),
+            fetch('/jobcv/master' + q()).then((r) => r.json()).catch(() => null),
+            fetch('/jobcv/delta' + q('&dir=incoming')).then((r) => r.json()).catch(() => null),
+            fetch('/jobcv/delta' + q()).then((r) => r.json()).catch(() => null),
             fetch('/jobcv/applications' + q()).then((r) => r.json()).catch(() => null),
           ]);
           state.letter = letter && letter.letter ? letter.letter : null;
           state.post = post || null;
           state.brief = brief && brief.brief ? brief.brief : null;
+          state.master = master && master.master ? master.master : null;
+          state.masterDelta = masterDelta && masterDelta.ok ? masterDelta : null;
+          state.masterDeltaOut = masterDeltaOut && masterDeltaOut.ok ? masterDeltaOut : null;
           state.apps = apps && apps.applications ? apps.applications : [];
           renderHeader();
-          if (['overview', 'post', 'letter'].includes(state.tab)) render();
+          if (renderSig() !== lastSig) {
+            if (['overview', 'post', 'letter', 'master', 'jobs'].includes(state.tab)) render();
+            else lastSig = renderSig();
+          }
           if (drawerOpen) renderAppsDrawer();
         } catch (e) {}
       }
@@ -482,12 +777,15 @@
       }
 
       /* --------------------------------------------------- direct route actions */
-      async function post(path, body) {
-        await fetch(path, {
+      /* `asSession` targets a row whose candidacy was opened in another session
+         (the tracker aggregates across sessions); defaults to this one. */
+      async function post(path, body, asSession) {
+        const res = await fetch(path, {
           method: 'POST', headers: { 'content-type': 'application/json' },
-          body: JSON.stringify(Object.assign({ sessionId: SESSION }, body)),
+          body: JSON.stringify(Object.assign({ sessionId: asSession || SESSION }, body)),
         });
         await Promise.all([pollDocOnce(), poll()]);
+        return res;
       }
 
       /* --------------------------------------------------------------- gap CSS */
@@ -496,9 +794,9 @@
         'border-bottom:2px solid #b3261e!important;border-radius:2px;padding:0 1px}' +
         '.dsh-gap[data-dsh-gap="blocker"]{background:rgba(179,38,30,.16)!important;font-weight:600}' +
         '.dsh-gap[data-dsh-gap="minor"]{border-bottom:1px dashed #b3261e!important;background:rgba(179,38,30,.05)!important}' +
-        '[data-jc-mark]{outline:2px dashed var(--accent,#2563eb);outline-offset:2px;background:rgba(37,99,235,.08)}' +
+        '[data-jc-mark]{outline:2px dashed var(--accent,#2f5d8a);outline-offset:2px;background:rgba(47,93,138,.08)}' +
         'body.jc-marking *{cursor:crosshair!important}' +
-        'body.jc-marking p:hover,body.jc-marking li:hover,body.jc-marking h1:hover,body.jc-marking h2:hover,body.jc-marking h3:hover,body.jc-marking td:hover{background:rgba(37,99,235,.10)}' +
+        'body.jc-marking p:hover,body.jc-marking li:hover,body.jc-marking h1:hover,body.jc-marking h2:hover,body.jc-marking h3:hover,body.jc-marking td:hover{background:rgba(47,93,138,.10)}' +
         '</style>';
       function withGapCss(html) {
         const s = String(html || '');
@@ -563,12 +861,623 @@
         };
       }
 
+      /* ------------------------------------------- a git-style diff, client-side
+         The server's /jobcv/delta ships counts and changed blocks only; hunks,
+         line numbers and context are a presentation concern, so both documents
+         are re-diffed HERE with the same normalization the host uses
+         (lib/store/cv-diff.js): the unit is the text block — a heading, a
+         bullet, a paragraph — never markup, so styling churn never shows. */
+
+      const DIFF_BLOCK_TAGS = new Set(['P', 'DIV', 'LI', 'UL', 'OL', 'DL', 'DD', 'DT', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'TABLE', 'THEAD', 'TBODY', 'TR', 'TD', 'TH', 'SECTION', 'ARTICLE', 'HEADER', 'FOOTER', 'MAIN', 'ASIDE', 'NAV', 'FIGURE', 'FIGCAPTION', 'BLOCKQUOTE', 'PRE', 'BR', 'HR']);
+      const DIFF_MAX_BLOCKS = 500;
+      const DIFF_MAX_CHARS = 320;
+      const DIFF_CTX = 3;
+      const DIFF_FOLD_MIN = 7;
+
+      /* An HTML document as ordered normalized blocks. Each block also carries
+         the nearest preceding heading, which becomes the hunk's section label
+         — the diff equivalent of git's function context. */
+      function blockify(html) {
+        const out = [];
+        let buf = '';
+        let section = '';
+        let full = false;
+        const flush = () => {
+          const t = buf.replace(/[\s\u00a0]+/g, ' ').trim();
+          buf = '';
+          if (t === '' || full) return;
+          out.push({ t: t.length > DIFF_MAX_CHARS ? t.slice(0, DIFF_MAX_CHARS) : t, s: section });
+          if (out.length >= DIFF_MAX_BLOCKS) full = true;
+        };
+        const walk = (node) => {
+          if (full) return;
+          if (node.nodeType === 3) { buf += node.data; return; }
+          if (node.nodeType !== 1) return;
+          const tag = node.tagName;
+          if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEMPLATE') return;
+          const block = DIFF_BLOCK_TAGS.has(tag);
+          if (block) flush();
+          if (/^H[1-6]$/.test(tag)) {
+            section = (node.textContent || '').replace(/[\s\u00a0]+/g, ' ').trim().slice(0, 80);
+          }
+          for (let c = node.firstChild; c; c = c.nextSibling) walk(c);
+          if (block) flush();
+        };
+        let doc = null;
+        try { doc = new DOMParser().parseFromString(String(html == null ? '' : html), 'text/html'); } catch (e) { doc = null; }
+        if (doc && doc.body) walk(doc.body);
+        flush();
+        return out;
+      }
+
+      /* The LCS edit script between two block lists — same algorithm as the
+         host's diffBlocks, so what the browser shows as hunks agrees with the
+         counts /jobcv/delta reports. */
+      function diffOps(a, b) {
+        const n = a.length;
+        const m = b.length;
+        if (n === 0 && m === 0) return [];
+        const width = m + 1;
+        const dp = new Int32Array((n + 1) * width);
+        for (let i = n - 1; i >= 0; i--) {
+          for (let j = m - 1; j >= 0; j--) {
+            dp[i * width + j] =
+              a[i].t === b[j].t
+                ? dp[(i + 1) * width + j + 1] + 1
+                : Math.max(dp[(i + 1) * width + j], dp[i * width + j + 1]);
+          }
+        }
+        const ops = [];
+        const push = (op, item) => {
+          const last = ops[ops.length - 1];
+          if (last && last.op === op) last.items.push(item);
+          else ops.push({ op: op, items: [item] });
+        };
+        let i = 0;
+        let j = 0;
+        while (i < n && j < m) {
+          if (a[i].t === b[j].t) { push('same', a[i]); i += 1; j += 1; }
+          else if (dp[(i + 1) * width + j] >= dp[i * width + j + 1]) { push('del', a[i]); i += 1; }
+          else { push('add', b[j]); j += 1; }
+        }
+        for (; i < n; i++) push('del', a[i]);
+        for (; j < m; j++) push('add', b[j]);
+        return ops;
+      }
+
+      /* The edit script as flat lines with old/new line numbers. */
+      function diffLines(ops) {
+        const lines = [];
+        let o = 0;
+        let n = 0;
+        for (const run of ops) {
+          for (const item of run.items) {
+            if (run.op === 'same') { o += 1; n += 1; lines.push({ k: 'ctx', o: o, n: n, t: item.t, s: item.s }); }
+            else if (run.op === 'del') { o += 1; lines.push({ k: 'del', o: o, n: 0, t: item.t, s: item.s }); }
+            else { n += 1; lines.push({ k: 'add', o: 0, n: n, t: item.t, s: item.s }); }
+          }
+        }
+        return lines;
+      }
+
+      /* Full diff model: every line, plus the hunks (runs of lines at most
+         DIFF_CTX from a change) the renderer shows. Short unchanged gaps stay
+         as context; longer ones become fold rows. */
+      function buildDiff(beforeHtml, afterHtml) {
+        const lines = diffLines(diffOps(blockify(beforeHtml), blockify(afterHtml)));
+        let added = 0;
+        let removed = 0;
+        const near = new Array(lines.length).fill(false);
+        lines.forEach((l, i) => {
+          if (l.k === 'add') added += 1;
+          else if (l.k === 'del') removed += 1;
+          else return;
+          for (let x = i - DIFF_CTX; x <= i + DIFF_CTX; x++) if (x >= 0 && x < lines.length) near[x] = true;
+        });
+        const hunks = [];
+        let i = 0;
+        while (i < lines.length) {
+          if (!near[i]) { i += 1; continue; }
+          const start = i;
+          while (i < lines.length && near[i]) i += 1;
+          const h = { lines: lines.slice(start, i), start: start };
+          markWords(h);
+          const olds = h.lines.filter((l) => l.o > 0);
+          const news = h.lines.filter((l) => l.n > 0);
+          const prev = start > 0 ? lines[start - 1] : null;
+          const change = h.lines.find((l) => l.k !== 'ctx') || h.lines[0];
+          h.header = {
+            oStart: olds.length ? olds[0].o : prev && prev.o ? prev.o : 0,
+            oCount: olds.length,
+            nStart: news.length ? news[0].n : prev && prev.n ? prev.n : 0,
+            nCount: news.length,
+            section: change ? change.s : '',
+          };
+          hunks.push(h);
+        }
+        return { lines: lines, hunks: hunks, added: added, removed: removed };
+      }
+
+      /* A single deleted line followed by a single added line is the CV's
+         rewording case — mark the words that actually moved so the eye can
+         skip the rest. Longer runs read fine as whole blocks. */
+      function markWords(h) {
+        const L = h.lines;
+        for (let i = 0; i + 1 < L.length; i++) {
+          if (L[i].k !== 'del' || L[i + 1].k !== 'add') continue;
+          if (i > 0 && L[i - 1].k === 'del') continue;
+          if (i + 2 < L.length && L[i + 2].k === 'add') continue;
+          const pair = wordMarks(L[i].t, L[i + 1].t);
+          if (pair) { L[i].seg = pair[0]; L[i + 1].seg = pair[1]; }
+        }
+      }
+
+      function wordMarks(x, y) {
+        if (x.length + y.length > 900) return null;
+        const a = x.split(/(\s+)/).filter((t) => t !== '');
+        const b = y.split(/(\s+)/).filter((t) => t !== '');
+        const n = a.length;
+        const m = b.length;
+        if (n === 0 || m === 0 || n * m > 20000) return null;
+        const width = m + 1;
+        const dp = new Int32Array((n + 1) * width);
+        for (let i = n - 1; i >= 0; i--) {
+          for (let j = m - 1; j >= 0; j--) {
+            dp[i * width + j] =
+              a[i] === b[j]
+                ? dp[(i + 1) * width + j + 1] + 1
+                : Math.max(dp[(i + 1) * width + j], dp[i * width + j + 1]);
+          }
+        }
+        const dx = [];
+        const dy = [];
+        const put = (arr, w, mk) => {
+          const last = arr[arr.length - 1];
+          if (last && last.m === mk) last.w += w;
+          else arr.push({ w: w, m: mk });
+        };
+        let i = 0;
+        let j = 0;
+        while (i < n && j < m) {
+          if (a[i] === b[j]) { put(dx, a[i], 0); put(dy, b[j], 0); i += 1; j += 1; }
+          else if (dp[(i + 1) * width + j] >= dp[i * width + j + 1]) { put(dx, a[i], 1); i += 1; }
+          else { put(dy, b[j], 1); j += 1; }
+        }
+        for (; i < n; i++) put(dx, a[i], 1);
+        for (; j < m; j++) put(dy, b[j], 1);
+        return [dx, dy];
+      }
+
+      /* ---- diff DOM ---- */
+      function hunkHeaderRow(h) {
+        const hd = h.header;
+        const fmt = (s, c) => (c === 1 ? String(s) : s + ',' + c);
+        const r = el('div', 'dhh');
+        r.innerHTML =
+          '<span class="at">@@ -' + fmt(hd.oStart, hd.oCount) + ' +' + fmt(hd.nStart, hd.nCount) + ' @@</span>' +
+          (hd.section ? '<span class="sec">' + esc(hd.section) + '</span>' : '');
+        return r;
+      }
+
+      function diffRow(line, fg) {
+        const r = el('div', 'dl d-' + line.k + (fg ? ' d-fold' : ''));
+        if (fg) r.dataset.fg = fg;
+        const txt = line.seg
+          ? line.seg.map((s) => (s.m ? '<i class="wm">' + esc(s.w) + '</i>' : esc(s.w))).join('')
+          : esc(line.t);
+        r.innerHTML =
+          '<span class="no">' + (line.o || '') + '</span>' +
+          '<span class="nn">' + (line.n || '') + '</span>' +
+          '<span class="ds">' + (line.k === 'add' ? '+' : line.k === 'del' ? '−' : ' ') + '</span>' +
+          '<span class="dt">' + txt + '</span>';
+        return r;
+      }
+
+      function renderDiff(diff) {
+        const box = el('div', 'diff');
+        let pos = 0;
+        let fg = 0;
+        const gapRows = (from, to, folded) => {
+          if (to - from <= 0) return;
+          if (folded) {
+            fg += 1;
+            const f = el('button', 'dfold', '⋯ ' + (to - from) + ' unchanged line' + (to - from === 1 ? '' : 's'));
+            f.type = 'button';
+            f.dataset.fg = String(fg);
+            box.appendChild(f);
+            for (let x = from; x < to; x++) box.appendChild(diffRow(diff.lines[x], String(fg)));
+          } else {
+            for (let x = from; x < to; x++) box.appendChild(diffRow(diff.lines[x]));
+          }
+        };
+        diff.hunks.forEach((h, hi) => {
+          const prevEnd = hi === 0 ? 0 : diff.hunks[hi - 1].start + diff.hunks[hi - 1].lines.length;
+          gapRows(prevEnd, h.start, h.start - prevEnd >= DIFF_FOLD_MIN);
+          box.appendChild(hunkHeaderRow(h));
+          for (const line of h.lines) box.appendChild(diffRow(line));
+          pos = h.start + h.lines.length;
+        });
+        gapRows(pos, diff.lines.length, diff.lines.length - pos >= DIFF_FOLD_MIN);
+        return box;
+      }
+
+      /* clicking a fold row reveals the unchanged run it stands for */
+      document.addEventListener('click', (e) => {
+        const f = e.target.closest ? e.target.closest('.dfold') : null;
+        if (!f) return;
+        const box = f.closest('.diff');
+        if (!box) return;
+        box.querySelectorAll('.d-fold[data-fg="' + f.dataset.fg + '"]').forEach((row) => row.classList.add('open'));
+        f.remove();
+      });
+
+      /* computed diffs are pure functions of two documents — keep a few */
+      const diffCache = new Map();
+      function cachedDiff(key, beforeHtml, afterHtml) {
+        let d = diffCache.get(key);
+        if (!d) {
+          d = buildDiff(beforeHtml, afterHtml);
+          diffCache.set(key, d);
+          if (diffCache.size > 12) diffCache.delete(diffCache.keys().next().value);
+        }
+        return d;
+      }
+
+      /* the incoming diff needs master@base — the one document the preview
+         does not already hold. Fetched once per version, then kept. */
+      const baseMasterResolved = new Map();
+      const baseMasterInflight = new Map();
+      function ensureBaseMaster(version) {
+        if (baseMasterResolved.has(version)) return baseMasterResolved.get(version);
+        if (!baseMasterInflight.has(version)) {
+          baseMasterInflight.set(version, fetch('/jobcv/history' + q('&kind=master&version=' + version))
+            .then((r) => (r.ok ? r.json() : null))
+            .then((j) => {
+              const html = j && typeof j.html === 'string' ? j.html : null;
+              baseMasterResolved.set(version, html);
+              if (html !== null) { state.baseReady = version; render(); }
+              return html;
+            })
+            .catch(() => { baseMasterResolved.set(version, null); return null; }));
+        }
+        return null;
+      }
+
+      function diffStatsBadge(added, removed) {
+        const total = added + removed;
+        const pct = total ? Math.round((added / total) * 100) : 50;
+        return '<span class="dstats"><b class="pm-a">+' + added + '</b><b class="pm-d">−' + removed + '</b>' +
+          '<span class="dbar"><i style="width:' + pct + '%"></i></span></span>';
+      }
+
+      /* the server-shipped change list, shown until (or instead of) the hunk
+         diff — e.g. when the base master version has aged out of history */
+      function compactChanges(changes) {
+        const list = el('div', 'dlist');
+        changes.forEach((ch) => {
+          const row = el('div', 'drow');
+          row.innerHTML = '<span class="dchip ' + (ch.op === 'add' ? 'add' : 'del') + '">' + (ch.op === 'add' ? '+' : '−') + '</span>' +
+            '<span class="t">' + esc(ch.text) + '</span>';
+          list.appendChild(row);
+        });
+        return list;
+      }
+
       /* --------------------------------------------------------------- render */
       function render() {
         const v = document.getElementById('view');
+        const keepFocus = document.activeElement && document.activeElement.id === 'jobs-q';
+        const caret = keepFocus ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
         v.innerHTML = '';
-        const fn = ({ overview: rOverview, cv: rCv, letter: rLetter, post: rPost, fit: rFit, review: rReview })[state.tab];
+        const fn = ({ overview: rOverview, cv: rCv, letter: rLetter, post: rPost, master: rMaster, fit: rFit, jobs: rJobs, review: rReview })[state.tab];
         if (fn) fn(v);
+        if (keepFocus) {
+          const n = document.getElementById('jobs-q');
+          if (n) { n.focus(); try { n.setSelectionRange(caret[0], caret[1]); } catch (e) {} }
+        }
+        lastSig = renderSig();
+      }
+
+      /* ------------------------------------------------------- jobs workbench */
+      const jwToggle = (arr, v) => (arr.indexOf(v) === -1 ? arr.concat([v]) : arr.filter((x) => x !== v));
+      const jStatus = (a) => (a && a.application && a.application.status) || 'drafting';
+      function jwStatusDot(s) {
+        return s === 'applied' ? 'var(--accent)' : s === 'interview' ? 'var(--major)'
+          : s === 'offer' ? 'var(--ok)' : s === 'rejected' ? 'var(--blocker)' : 'var(--muted)';
+      }
+      function jCompany(a) {
+        if (a && a.company && a.company.trim()) return a.company.trim();
+        if (a && a.workspace) {
+          const parts = a.workspace.split(/[\\/]/).filter(Boolean);
+          if (parts.length >= 2) return parts[parts.length - 2];
+        }
+        return '';
+      }
+      const jScored = (a) => typeof a.fitScore === 'number' && isFinite(a.fitScore);
+      const jHas = (a, k) => (k === 'cv' ? (a.cvVersion | 0) > 0 : k === 'letter' ? (a.letterVersion | 0) > 0 : k === 'post' ? (a.postChars | 0) > 0 : false);
+      const jBand = (a) => (jScored(a) ? fitBand(a.fitScore).key : 'unscored');
+      const jHay = (a) => [a.company, a.jobTitle, a.jobUrl, a.workspace, jSource(a.jobUrl), jStatus(a), a.application && a.application.note].filter(Boolean).join(' ').toLowerCase();
+
+      /* Which portal a posting came from — the hostname, tidied, with friendly
+         names for the boards this tracker sees most. */
+      const JOB_PORTALS = {
+        'cryptocurrencyjobs.co': 'Cryptocurrency Jobs',
+        'web3.career': 'web3.career',
+        'jobs.ashbyhq.com': 'Ashby',
+        'boards.greenhouse.io': 'Greenhouse',
+        'job-boards.greenhouse.io': 'Greenhouse',
+        'linkedin.com': 'LinkedIn',
+        'startup.jobs': 'Startup Jobs',
+        'rustify.rs': 'Rustify',
+        'wellfound.com': 'Wellfound',
+        'builtin.com': 'Built In',
+        'mycareersfuture.gov.sg': 'MyCareersFuture',
+        'careers.open.gov.sg': 'OGP Careers',
+      };
+      function jSource(url) {
+        if (!url) return '';
+        let host;
+        try { host = new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return ''; }
+        if (JOB_PORTALS[host]) return JOB_PORTALS[host];
+        const base = host.replace(/^(jobs|job-boards|boards|careers|apply|sg)\./, '');
+        return JOB_PORTALS[base] || host;
+      }
+      function jSourceLink(url) {
+        const name = jSource(url);
+        if (!url || !name) return '';
+        return '<a class="jw-src" href="' + esc(url) + '" target="_blank" rel="noopener" title="' + esc(url) + '">' + esc(name) + ' ↗</a>';
+      }
+
+      function jMatch(a, wb, query) {
+        const query2 = (query || '').trim().toLowerCase();
+        if (query2 && !query2.split(/\s+/).every((t) => jHay(a).indexOf(t) !== -1)) return false;
+        if (wb.statuses.length && wb.statuses.indexOf(jStatus(a)) === -1) return false;
+        if (wb.company && jCompany(a).toLowerCase() !== wb.company.toLowerCase()) return false;
+        if (wb.has.length && !wb.has.every((k) => jHas(a, k))) return false;
+        if (wb.band !== 'any') {
+          const b = jBand(a);
+          if (wb.band === 'scored' ? b === 'unscored' : b !== wb.band) return false;
+        }
+        return true;
+      }
+
+      function jSort(rows, field, dir) {
+        const mul = dir === 'asc' ? 1 : -1;
+        const textual = field === 'company' || field === 'jobTitle';
+        const num = (a) => {
+          if (field === 'fitScore') return jScored(a) ? a.fitScore : NaN;
+          if (field === 'activity') return Number(a.activity) || NaN;
+          if (field === 'status') return STATUSES.indexOf(jStatus(a));
+          return NaN;
+        };
+        const txt = (a) => (field === 'company' ? jCompany(a) : a.jobTitle || '').toLowerCase();
+        const byAct = (a, b) => (Number(b.activity) || 0) - (Number(a.activity) || 0);
+        return rows.slice().sort((a, b) => {
+          if (textual) { const t = txt(a).localeCompare(txt(b), undefined, { numeric: true, sensitivity: 'base' }); return t ? t * mul : byAct(a, b); }
+          const an = num(a), bn = num(b), am = !isFinite(an), bm = !isFinite(bn);
+          if (am && bm) return byAct(a, b);
+          if (am) return 1;
+          if (bm) return -1;
+          return (an - bn) * mul || byAct(a, b);
+        });
+      }
+
+      function jClearFilters() {
+        state.jobsQ = '';
+        state.jobsWB = Object.assign(state.jobsWB, { statuses: [], has: [], company: '', band: 'any' });
+        saveJobsWB();
+        render();
+      }
+
+      function jSwitch(a) {
+        if (!a.jobUrl) return;
+        if (state.doc && a.jobUrl === state.doc.jobUrl) { selectTab('overview'); return; }
+        post('/jobcv/switch', { jobUrl: a.jobUrl, company: a.company, jobTitle: a.jobTitle }).then(() => selectTab('overview'));
+      }
+
+      /* The stage tag as an inline editable select — retags this row's own
+         candidacy (by jobUrl, in its own session) without switching to it. */
+      function jStatusSelect(a) {
+        const cur = jStatus(a);
+        const sel = el('select', 'jw-status ' + cur);
+        sel.title = 'Set application stage';
+        sel.innerHTML = STATUSES.map((s) => '<option value="' + s + '"' + (s === cur ? ' selected' : '') + '>' + s + '</option>').join('');
+        sel.onclick = (e) => e.stopPropagation();
+        sel.onkeydown = (e) => e.stopPropagation();
+        sel.onchange = (e) => {
+          e.stopPropagation();
+          const next = sel.value;
+          sel.className = 'jw-status ' + next;
+          sel.disabled = true;
+          post('/jobcv/status', { status: next, jobUrl: a.jobUrl || undefined }, a.sessionId)
+            .then((r) => { if (r && !r.ok) { sel.value = cur; sel.className = 'jw-status ' + cur; } })
+            .catch(() => { sel.value = cur; sel.className = 'jw-status ' + cur; })
+            .finally(() => { sel.disabled = false; });
+        };
+        return sel;
+      }
+
+      function jLbRow(a, rank) {
+        const cur = state.doc && a.jobUrl && a.jobUrl === state.doc.jobUrl;
+        const row = el('div', 'lb-row' + (cur ? ' cur' : ''));
+        const band = jScored(a) ? fitBand(a.fitScore) : null;
+        const tags = [];
+        tags.push(a.cvVersion ? 'CV v' + a.cvVersion : 'no CV');
+        if (a.letterVersion) tags.push('letter v' + a.letterVersion);
+        if (a.postChars) tags.push('post');
+        row.innerHTML =
+          '<span class="lb-rank">' + (rank ? '#' + rank : '–') + '</span>' +
+          '<span class="lb-fit band-' + (band ? band.key : '') + '">' + (jScored(a) ? a.fitScore : '—') + '</span>' +
+          '<span class="lb-mid">' +
+            '<div class="lb-co">' + esc(a.company || '—') + (cur ? ' · <span style="color:var(--accent)">active</span>' : '') + '</div>' +
+            '<div class="lb-ro">' + esc(a.jobTitle || '—') + '</div>' +
+            '<div class="lb-tags">' + (band ? '<span class="lb-band">' + band.label + '</span>' : '') +
+              tags.map((t) => '<span class="t">' + esc(t) + '</span>').join('') +
+              jSourceLink(a.jobUrl) + '</div>' +
+          '</span>';
+        row.appendChild(jStatusSelect(a));
+        row.onclick = () => jSwitch(a);
+        row.querySelectorAll('a.jw-src').forEach((el2) => el2.addEventListener('click', (e) => e.stopPropagation()));
+        return row;
+      }
+
+      function jLeaderboard(rows) {
+        const box = el('div');
+        const scored = rows.filter(jScored).sort((a, b) => b.fitScore - a.fitScore || (Number(b.activity) || 0) - (Number(a.activity) || 0));
+        const unscored = rows.filter((a) => !jScored(a));
+        const lb = el('div', 'lb');
+        scored.forEach((a, i) => lb.appendChild(jLbRow(a, i + 1)));
+        if (scored.length) box.appendChild(lb);
+        if (unscored.length) {
+          box.appendChild(el('div', 'jw-sub', 'Not scored yet · ' + unscored.length));
+          const lb2 = el('div', 'lb');
+          unscored.forEach((a) => lb2.appendChild(jLbRow(a, null)));
+          box.appendChild(lb2);
+        }
+        return box;
+      }
+
+      function jTable(rows) {
+        const wb = state.jobsWB;
+        const wrap = el('div');
+        wrap.style.overflowX = 'auto';
+        const t = el('table', 'jw-table');
+        const th = (label, field) => {
+          if (!field) return '<th>' + label + '</th>';
+          const on = wb.sortField === field;
+          return '<th><button class="' + (on ? 'on' : '') + '" data-sf="' + field + '">' + label + (on ? (wb.sortDir === 'asc' ? ' ▲' : ' ▼') : '') + '</button></th>';
+        };
+        t.innerHTML = '<thead><tr>' + th('#') + th('Company', 'company') + th('Role', 'jobTitle') + th('Fit', 'fitScore') + th('Stage', 'status') + th('Source') + th('Updated', 'activity') + '</tr></thead>';
+        const tb = el('tbody');
+        const td = (cls, html) => { const c = el('td', cls); if (html != null) c.innerHTML = html; return c; };
+        rows.forEach((a, i) => {
+          const cur = state.doc && a.jobUrl && a.jobUrl === state.doc.jobUrl;
+          const tr = el('tr', cur ? 'cur' : '');
+          tr.appendChild(td('num', String(i + 1)));
+          tr.appendChild(td(null, esc(jCompany(a) || '—')));
+          tr.appendChild(td(null, esc(a.jobTitle || '—')));
+          const fitTd = td('num band-' + (jScored(a) ? fitBand(a.fitScore).key : ''), (jScored(a) ? a.fitScore : '—') + '');
+          fitTd.style.fontWeight = '700';
+          tr.appendChild(fitTd);
+          const stTd = td('jw-stcell');
+          stTd.appendChild(jStatusSelect(a));
+          tr.appendChild(stTd);
+          tr.appendChild(td('sub', jSourceLink(a.jobUrl) || '—'));
+          tr.appendChild(td('sub', ago(a.activity) || '—'));
+          tr.onclick = () => jSwitch(a);
+          tr.querySelectorAll('a.jw-src').forEach((el2) => el2.addEventListener('click', (e) => e.stopPropagation()));
+          tb.appendChild(tr);
+        });
+        t.appendChild(tb);
+        t.querySelectorAll('button[data-sf]').forEach((b) => {
+          b.onclick = (e) => {
+            e.stopPropagation();
+            const f = b.dataset.sf;
+            if (wb.sortField === f) wb.sortDir = wb.sortDir === 'asc' ? 'desc' : 'asc';
+            else { wb.sortField = f; wb.sortDir = f === 'company' || f === 'jobTitle' ? 'asc' : 'desc'; }
+            saveJobsWB();
+            render();
+          };
+        });
+        wrap.appendChild(t);
+        return wrap;
+      }
+
+      function rJobs(v) {
+        const wb = state.jobsWB;
+        const all = state.apps || [];
+        const wrap = el('div', 'jw');
+        if (!all.length) {
+          wrap.innerHTML = '<div class="jw-empty">No jobs tracked yet.<br><span class="sub">Ask your assistant to open candidacies against job posts — each one lands here.</span></div>';
+          v.appendChild(wrap);
+          return;
+        }
+        const shown = jSort(all.filter((a) => jMatch(a, wb, state.jobsQ)), wb.sortField, wb.sortDir);
+
+        const deck = el('div', 'jw-deck');
+
+        // search + view toggle
+        const l1 = el('div', 'jw-line');
+        const search = el('div', 'jw-search', '<span style="color:var(--muted)">⌕</span>');
+        const inp = el('input');
+        inp.id = 'jobs-q';
+        inp.type = 'text';
+        inp.value = state.jobsQ;
+        inp.placeholder = 'Search company, role, link, note…';
+        inp.oninput = () => { state.jobsQ = inp.value; render(); };
+        search.appendChild(inp);
+        if (state.jobsQ) {
+          const x = el('button', 'x', '✕');
+          x.onclick = () => { state.jobsQ = ''; render(); };
+          search.appendChild(x);
+        }
+        l1.appendChild(search);
+        const seg = el('div', 'seg');
+        [['leaderboard', 'Leaderboard'], ['table', 'Table']].forEach(([k, lbl]) => {
+          const b = el('button', 'seg-b' + (wb.view === k ? ' on' : ''), lbl);
+          b.type = 'button';
+          b.onclick = () => { if (wb.view === k) return; wb.view = k; saveJobsWB(); render(); };
+          seg.appendChild(b);
+        });
+        l1.appendChild(seg);
+        deck.appendChild(l1);
+
+        // status facet chips
+        const counts = {};
+        STATUSES.forEach((s) => (counts[s] = 0));
+        all.forEach((a) => (counts[jStatus(a)] += 1));
+        const l2 = el('div', 'jw-line');
+        STATUSES.forEach((s) => {
+          if (!counts[s] && wb.statuses.indexOf(s) === -1) return;
+          const on = wb.statuses.indexOf(s) !== -1;
+          const c = el('button', 'jw-fchip' + (on ? ' on' : ''), '<span class="d" style="background:' + jwStatusDot(s) + '"></span>' + s + ' ' + counts[s]);
+          c.onclick = () => { wb.statuses = jwToggle(wb.statuses, s); saveJobsWB(); render(); };
+          l2.appendChild(c);
+        });
+        if (l2.childNodes.length) deck.appendChild(l2);
+
+        // artifact facets + company + fit band + count + reset
+        const l3 = el('div', 'jw-line');
+        [['cv', 'has CV'], ['letter', 'has letter'], ['post', 'has post']].forEach(([k, lbl]) => {
+          const on = wb.has.indexOf(k) !== -1;
+          const c = el('button', 'jw-fchip' + (on ? ' on' : ''), lbl);
+          c.onclick = () => { wb.has = jwToggle(wb.has, k); saveJobsWB(); render(); };
+          l3.appendChild(c);
+        });
+        const companies = Array.from(new Set(all.map(jCompany).filter(Boolean))).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+        if (companies.length > 1) {
+          const sel = el('select', 'act');
+          sel.innerHTML = '<option value="">all companies</option>' +
+            companies.map((c) => '<option' + (wb.company === c ? ' selected' : '') + '>' + esc(c) + '</option>').join('');
+          sel.onchange = () => { wb.company = sel.value; saveJobsWB(); render(); };
+          l3.appendChild(sel);
+        }
+        const bandSel = el('select', 'act');
+        bandSel.innerHTML = [['any', 'any fit'], ['scored', 'scored'], ['unscored', 'not scored'], ['strong', '80+ · clears'], ['solid', '60–79'], ['partial', '40–59'], ['thin', 'under 40']]
+          .map(([k, lbl]) => '<option value="' + k + '"' + (wb.band === k ? ' selected' : '') + '>' + lbl + '</option>').join('');
+        bandSel.onchange = () => { wb.band = bandSel.value; saveJobsWB(); render(); };
+        l3.appendChild(bandSel);
+        if (wb.statuses.length || wb.has.length || wb.company || wb.band !== 'any' || state.jobsQ.trim()) {
+          const r = el('button', 'jw-reset', 'reset');
+          r.onclick = jClearFilters;
+          l3.appendChild(r);
+        }
+        l3.appendChild(el('span', 'jw-count', shown.length + (shown.length !== all.length ? ' / ' + all.length : ' jobs')));
+        deck.appendChild(l3);
+        wrap.appendChild(deck);
+
+        if (!shown.length) {
+          const e = el('div', 'jw-empty', 'Nothing matches the search and filters. ');
+          const b = el('button', 'jw-reset', 'show everything');
+          b.onclick = jClearFilters;
+          e.appendChild(b);
+          wrap.appendChild(e);
+          v.appendChild(wrap);
+          return;
+        }
+
+        wrap.appendChild(wb.view === 'leaderboard' ? jLeaderboard(shown) : jTable(shown));
+        v.appendChild(wrap);
       }
 
       /* ---------------------------------------- applications drawer (virtual) */
@@ -733,6 +1642,9 @@
           stat(state.brief ? '✓' : '✗', 'breakdown', state.brief ? 'yes' : 'no') +
           stat(d.letter ? 'v' + d.letter.version : '✗', 'cover letter', d.letter ? 'yes' : 'no') +
           stat(d.masterVersion ? 'v' + d.masterVersion : '✗', 'master cv', d.masterVersion ? 'yes' : 'no') +
+          (d.masterVersion && d.version && d.masterVersion > (d.baseMasterVersion || 0)
+            ? stat('v' + (d.baseMasterVersion || 0) + ' → ' + d.masterVersion, 'master sync ready', 'no')
+            : '') +
           stat('v' + (d.version || 0), 'cv version') +
           '</div>';
         w.appendChild(grid);
@@ -751,6 +1663,11 @@
         });
         else btn('Revise the cover letter', () => raise('cover-letter', 'Revise the cover letter'));
         btn('Score / re-score the fit', () => raise('rescore', 'Score my fit against this job post'));
+        if (d.masterVersion && d.version && d.masterVersion > (d.baseMasterVersion || 0)) {
+          btn('Sync from master CV', () => raise('sync-master',
+            'Sync the latest master CV improvements into this tailored CV',
+            { note: 'reconcile CV v' + d.version + ' against master v' + d.masterVersion }));
+        }
         qa.appendChild(bar);
         w.appendChild(qa);
 
@@ -761,7 +1678,11 @@
 
       function docToolbar(kind) {
         const bar = el('div', 'toolbar');
-        const open = el('button', 'act', 'Open in tab (print / save PDF)');
+        const pr = el('button', 'act primary', '⎙ Print / Save PDF');
+        pr.title = 'Opens the ' + kind + ' at A4 and shows the print / Save-as-PDF dialog';
+        pr.onclick = () => printDoc(kind);
+        bar.appendChild(pr);
+        const open = el('button', 'act', 'Open in tab');
         open.onclick = () => openRaw(kind);
         bar.appendChild(open);
         if (kind === 'cv') {
@@ -815,6 +1736,167 @@
         const w = el('div', 'doc-frame');
         w.appendChild(frame(state.letter.html));
         v.appendChild(w);
+      }
+
+      /* the master CV tab: the source of truth, its diff against this
+         application, and the rendered documents side by side */
+      function rMaster(v) {
+        const d = state.doc;
+        if (!d || !d.workspace) {
+          v.innerHTML = '<div class="empty">No candidacy open yet.<br><span class="sub">Ask your assistant to open one against a job post.</span></div>';
+          return;
+        }
+        if (!d.masterVersion || !state.master) {
+          const e = el('div', 'empty');
+          e.innerHTML = 'No master CV yet.<br><span class="sub">The master is your full, untailored CV — every application is tailored from it. ' +
+            'Ask your assistant to set one up from any CV you have (POST /jobcv/master), and this tab shows it beside each tailored CV.</span>';
+          v.appendChild(e);
+          return;
+        }
+
+        const dl = state.masterDelta;
+        const syncable = dl && !dl.empty && (dl.changes || []).length > 0;
+        const out = state.masterDeltaOut;
+        const outReady = out && !out.empty && (out.changes || []).length > 0;
+
+        // ---- toolbar: print, open raw, and the side-by-side toggle ----
+        const bar = el('div', 'toolbar');
+        const pr = el('button', 'act primary', '⎙ Print / Save PDF');
+        pr.title = 'Opens the master CV at A4 and shows the print / Save-as-PDF dialog';
+        pr.onclick = () => printDoc('master');
+        bar.appendChild(pr);
+        const open = el('button', 'act', 'Open master in tab');
+        open.onclick = () => openRaw('master');
+        bar.appendChild(open);
+        if (d.html) {
+          const tg = el('button', 'act' + (state.masterSxs ? ' primary' : ''), state.masterSxs ? 'Side by side ✓' : 'Side by side');
+          tg.onclick = () => {
+            state.masterSxs = !state.masterSxs;
+            try { localStorage.setItem('jobcv-master-sxs', state.masterSxs ? '1' : '0'); } catch (e) {}
+            render();
+          };
+          bar.appendChild(tg);
+        }
+        bar.appendChild(el('span', 'sub', 'master v' + d.masterVersion + (state.master.note ? ' · ' + state.master.note : '')));
+        v.appendChild(bar);
+
+        // ---- the two directions, one at a time: what the master gained
+        //      since this CV was reconciled (sync down), and what tailoring
+        //      changed (fold back). Each renders as a git-style diff. ----
+        const segwrap = el('div', 'segwrap');
+        const seg = el('div', 'seg');
+        const mkSeg = (key, label, badge) => {
+          const b = el('button', 'seg-b' + (state.masterView === key ? ' on' : ''),
+            label + (badge ? ' <span class="seg-n">' + badge + '</span>' : ''));
+          b.type = 'button';
+          b.onclick = () => {
+            if (state.masterView === key) return;
+            state.masterView = key;
+            try { localStorage.setItem('jobcv-master-view', key); } catch (e) {}
+            render();
+          };
+          return b;
+        };
+        seg.appendChild(mkSeg('sync', 'Master gained', dl && !dl.empty ? '<span class="pm-a">+' + dl.added + '</span> <span class="pm-d">−' + dl.removed + '</span>' : ''));
+        seg.appendChild(mkSeg('tailor', 'Tailoring changes', outReady ? '<span class="pm-a">+' + out.added + '</span> <span class="pm-d">−' + out.removed + '</span>' : ''));
+        segwrap.appendChild(seg);
+        v.appendChild(segwrap);
+
+        if (state.masterView === 'tailor' && d.html) v.appendChild(outgoingDeltaCard(out));
+        else v.appendChild(masterSyncCard(dl, syncable));
+
+        // ---- the documents ----
+        if (state.masterSxs && d.html) {
+          const sxs = el('div', 'sxs');
+          const mfig = el('figure');
+          mfig.appendChild(el('figcaption', null, 'Master CV · v' + d.masterVersion));
+          const mfr = el('div', 'doc-frame'); mfr.appendChild(frame(state.master.html)); mfig.appendChild(mfr);
+          const cfig = el('figure');
+          cfig.appendChild(el('figcaption', null, esc((d.company || 'This job') + ' · CV v' + d.version)));
+          const cfr = el('div', 'doc-frame'); cfr.appendChild(frame(d.html)); cfig.appendChild(cfr);
+          sxs.appendChild(mfig); sxs.appendChild(cfig);
+          v.appendChild(sxs);
+        } else {
+          const w = el('div', 'doc-frame');
+          w.appendChild(frame(state.master.html));
+          v.appendChild(w);
+        }
+
+        const rp = requestsPanel();
+        if (rp) v.appendChild(rp);
+      }
+
+      function masterSyncCard(dl, syncable) {
+        const c = el('div', 'card dcard');
+        const d = state.doc;
+        if (!dl || dl.empty === 'no-master') {
+          c.appendChild(el('div', 'sub', 'No master CV to compare against yet.'));
+          return c;
+        }
+        if (dl.empty === 'no-document') {
+          c.appendChild(el('div', 'sub', 'Tailor a CV for this job first — then this shows what the master would add to it.'));
+          return c;
+        }
+        if (dl.empty === 'in-sync') {
+          c.appendChild(el('div', 'd-insync', '<span class="oktick">✓</span> This CV is level with your master CV (v' + dl.masterVersion + '). Nothing to pull in.'));
+          return c;
+        }
+        const base = dl.baseMasterVersion;
+        const head = el('div', 'dc-head');
+        head.innerHTML = '<span class="dc-file">master <span class="mut">v' + base + '</span><span class="arrow">→</span>v' + dl.masterVersion + '</span>' +
+          diffStatsBadge(dl.added, dl.removed);
+        c.appendChild(head);
+        c.appendChild(el('div', 'dc-cap', 'What the master gained since CV v' + d.version + ' was tailored' +
+          (dl.baseInferred ? ' — this CV predates sync tracking, so everything since the oldest master kept (v' + base + ') shows' : '') +
+          '. Syncing pulls in only what fits this post.'));
+
+        const baseHtml = ensureBaseMaster(base);
+        if (baseHtml !== null && state.master && state.master.html) {
+          c.appendChild(renderDiff(cachedDiff('sync:' + base + '>' + dl.masterVersion, baseHtml, state.master.html)));
+        } else {
+          c.appendChild(compactChanges(dl.changes || []));
+        }
+
+        if (syncable) {
+          const foot = el('div', 'dc-foot');
+          const b = el('button', 'act primary', 'Ask the assistant to sync these into this CV');
+          b.onclick = () => raise('sync-master',
+            'Sync the latest master CV improvements into this tailored CV',
+            { note: dl.added + ' block(s) added in the master since v' + base + '; reconcile CV v' + d.version + ' against master v' + dl.masterVersion });
+          foot.appendChild(b);
+          foot.appendChild(el('div', 'sub', 'The assistant proposes only the parts that fit this job post — you decide each in Review.'));
+          c.appendChild(foot);
+        }
+        return c;
+      }
+
+      /* the outgoing delta: master@HEAD is BEFORE, this tailored CV AFTER —
+         additions live only in this CV (fold-back candidates), removals are
+         what tailoring left out */
+      function outgoingDeltaCard(dl) {
+        const c = el('div', 'card dcard');
+        const d = state.doc;
+        if (!dl || dl.empty === 'no-master') {
+          c.appendChild(el('div', 'sub', 'No master CV to compare against yet.'));
+          return c;
+        }
+        if (dl.empty === 'no-document') {
+          c.appendChild(el('div', 'sub', 'No tailored CV for this job yet.'));
+          return c;
+        }
+        const diff = cachedDiff('out:' + dl.masterVersion + '>' + d.version, state.master.html, d.html);
+        if (!diff.added && !diff.removed) {
+          c.appendChild(el('div', 'd-insync', '<span class="oktick">✓</span> This CV is identical to the master (v' + dl.masterVersion + ').'));
+          return c;
+        }
+        const head = el('div', 'dc-head');
+        head.innerHTML = '<span class="dc-file">master <span class="mut">v' + dl.masterVersion + '</span><span class="arrow">→</span>CV v' + d.version +
+          (d.company ? ' <span class="mut">· ' + esc(d.company) + '</span>' : '') + '</span>' +
+          diffStatsBadge(diff.added, diff.removed);
+        c.appendChild(head);
+        c.appendChild(el('div', 'dc-cap', 'What tailoring changed. <b>Green</b> lines are in this CV and not the master — ask the assistant to fold the good ones back in. <b>Red</b> lines were left out.'));
+        c.appendChild(renderDiff(diff));
+        return c;
       }
 
       function rPost(v) {
@@ -976,13 +2058,31 @@
         c.appendChild(card);
       }
 
-      window.openRaw = (kind) => {
-        const html = kind === 'letter' ? (state.letter && state.letter.html) : (state.doc && state.doc.html);
+      /* Open a document (cv | letter | master) in its own top-level window so
+         it prints at real A4 — the in-page preview is a sandboxed iframe. With
+         thenPrint, fire the browser's print / Save-as-PDF dialog once it lays
+         out (the documents are self-contained, no external assets, so a short
+         beat is enough). */
+      function docHtmlFor(kind) {
+        if (kind === 'letter') return state.letter && state.letter.html;
+        if (kind === 'master') return state.master && state.master.html;
+        return state.doc && state.doc.html;
+      }
+      function openDocWindow(kind, thenPrint) {
+        const html = docHtmlFor(kind);
         if (!html) return;
         const w = window.open('', '_blank');
+        if (!w) { alert('Allow pop-ups for this page to open the ' + kind + ' for printing.'); return; }
+        w.document.open();
         w.document.write(html);
         w.document.close();
-      };
+        if (!thenPrint) return;
+        const go = () => { try { w.focus(); w.print(); } catch (e) {} };
+        if (w.document.readyState === 'complete') setTimeout(go, 200);
+        else w.addEventListener('load', () => setTimeout(go, 120));
+      }
+      window.openRaw = (kind) => openDocWindow(kind, false);
+      window.printDoc = (kind) => openDocWindow(kind, true);
 
       /* --------------------------------------------------------------- boot */
       selectTab(state.tab);

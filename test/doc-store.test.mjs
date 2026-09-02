@@ -194,8 +194,16 @@ try {
     note: '',
     company: '',
     jobTitle: '',
+    baseMasterVersion: 0,
     history: [],
   })
+  assert.equal(normalizeRecord({ baseMasterVersion: 4 }).baseMasterVersion, 4)
+  assert.equal(
+    normalizeRecord({ baseMasterVersion: -1 }).baseMasterVersion,
+    0,
+    'a negative lineage marker degrades to "never reconciled"',
+  )
+  assert.equal(normalizeRecord({ baseMasterVersion: 2.5 }).baseMasterVersion, 0)
   assert.deepEqual(normalizeRecord({ version: 3, html: 'x' }).history, [])
   assert.equal(normalizeRecord({ version: -2 }).version, 0)
   assert.equal(normalizeRecord({ version: 3, html: 'x' }).version, 3)

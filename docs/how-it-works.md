@@ -63,7 +63,10 @@ For the shape of the codebase see [ARCHITECTURE.md](ARCHITECTURE.md).
   - `GET /jobcv/delta?session=<id>` — what the active CV changed against the
     master: counts (added/removed/unchanged blocks) and only the change
     entries, from a host-side normalized block diff (`&kind=letter` diffs
-    the cover letter instead)
+    the cover letter instead). `&dir=incoming` flips it: what the master CV
+    _gained_ since this CV was reconciled with it (`master@base` →
+    `master@HEAD`, `base` from `record.baseMasterVersion` or inferred), for
+    syncing a master improvement back down into one tailored CV
   - `GET /jobcv/skill` — the agent-facing contract (A4, self-contained,
     truthful tailoring)
 - **Client half** (`lib/client.js`, built from `lib/client/` fragments)

@@ -106,10 +106,17 @@ client, jump to [**Also an MCP server**](#also-an-mcp-server).
   normalized text-block diff built host-side, so "what did tailoring move"
   costs one small read however many applications pile up, never a re-read of
   every full CV. The preview toolbar grows a **vs master** panel rendering
-  that diff (green what this candidacy gained, red what it left out), stale-
-  marked when the document moves underneath it; the contract tells the agent
-  to start from the master when no CV is named, and to propose folding
-  generally-true improvements back before saving them there.
+  that diff, stale-marked when the document moves underneath it; the contract
+  tells the agent to start from the master when no CV is named, and to propose
+  folding generally-true improvements back before saving them there. The
+  reverse runs too: `GET /jobcv/delta?dir=incoming` is what the master
+  _gained_ since a CV was tailored (tracked per-CV as `baseMasterVersion`),
+  and the MCP preview's **Master** tab shows the master beside the tailored
+  CV with a one-tap "sync from master" that proposes only the parts fitting
+  the job post — both deltas render as **git-style diffs** (hunks with section
+  headers, line numbers, context, word-level marks on reworded lines, folds
+  over long unchanged runs), computed in the browser with the same block
+  normalization the host uses.
 - **Jobs list onboarding, and switching** — the start form has a second door:
   **From a list** points at a markdown file of postings (one job per line,
   `- Title — https://…`; a `## Company` heading names the employer below it),
@@ -175,6 +182,34 @@ Other clients: register `node bin/dsh-job-cv-mcp.js` (or `npx -y dsh-job-cv-mcp`
 as a **stdio** MCP server. Only Node 22.19+ is needed — the package has zero
 runtime dependencies.
 
+### Reach it from claude.ai (web / mobile / Claude in Chrome)
+
+claude.ai only talks to **remote** MCP servers, so serve the transport over HTTP
+and put a tunnel in front:
+
+```sh
+# 1. run the server over HTTP with a bearer token (keep it on 127.0.0.1)
+DSH_JOB_CV_MCP_TOKEN=$(openssl rand -hex 24) \
+  node bin/dsh-job-cv-mcp.js --http --http-port 8123 --root ~/job-applications
+#    → MCP over HTTP: http://127.0.0.1:8123/mcp  (bearer token required)
+
+# 2. expose it (any tunnel works)
+cloudflared tunnel --url http://localhost:8123
+#    → https://<name>.trycloudflare.com
+
+# 3. claude.ai → Settings → Connectors → Add custom connector
+#    URL:   https://<name>.trycloudflare.com/mcp
+#    Token: the DSH_JOB_CV_MCP_TOKEN value
+```
+
+The `--http` server speaks the MCP Streamable HTTP transport (one `POST`
+endpoint, a `GET` keep-alive stream, `202` for notifications) and requires
+`Authorization: Bearer <token>` on every call — that URL can drive your whole CV
+workspace, so never expose it without the token, and keep the bind address on
+`127.0.0.1` with the tunnel doing the exposing. The preview page stays local; its
+`preview:` URL in `jobcv_context` won't open from claude.ai unless you tunnel
+that port too. The laptop running this process must stay up while you use it.
+
 ### Use it
 
 Ask your assistant to tailor your CV against a posting. It calls `jobcv_context`
@@ -193,9 +228,9 @@ does directly: switch the active application, set a status, restore a version,
 toggle light / dark. Your applications live in a drawer behind a discreet
 button, a virtualised list that stays smooth at any length.
 
-URL params: `?tab=overview` (or `cv`, `letter`, `post`, `fit`, `review`) deep-links
-a panel; `?theme=dark`; `?drawer=1` opens the applications list; `?live=0` for a
-static snapshot.
+URL params: `?tab=overview` (or `cv`, `letter`, `post`, `master`, `fit`, `review`)
+deep-links a panel; `?theme=dark`; `?drawer=1` opens the applications list;
+`?live=0` for a static snapshot.
 
 `--root` (or `$DSH_JOB_CV_ROOT`) sets where the per-application folders are
 written — one folder per job, with the CV, cover letter and post inside, that

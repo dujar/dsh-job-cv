@@ -33,11 +33,35 @@ Design decisions worth remembering:
   button appears without any probe request, and `sameDoc()` compares them so
   a master save pushes a fresh frame to open previews.
 
-Still open (phase 3):
+Phase 3 — sync-down — RESOLVED:
+
+- **Syncing an improved master back into a tailored CV.** The mirror image of
+  the fold-back. `GET /jobcv/delta?dir=incoming` diffs `master@base` →
+  `master@HEAD`, where `base` is `record.baseMasterVersion` — a new record
+  field seeded to the master HEAD on the first CV save, carried forward on
+  ordinary saves, moved only by an explicit sync save that passes
+  `baseMasterVersion`. A CV written before the field existed reads as 0 and
+  the delta infers a base from the oldest master still retained
+  (`baseInferred:true`). Same rule as everywhere else: the host does the
+  mechanical diff, the model proposes only what fits the post, the user
+  decides in Review, nothing is merged automatically. The MCP preview's
+  **Master** tab renders the master beside the tailored CV, lists the
+  incoming changes, and raises the `sync-master` request in one tap;
+  `jobcv_context` carries `baseMasterVersion` + `masterSyncAvailable`.
+- **A skip is final for future incoming deltas** (the next sync runs from the
+  reconciled version), but the master keeps the skipped block and the
+  outgoing `/jobcv/delta` still surfaces it — so nothing is lost, it just
+  stops nagging.
+
+Still open:
 
 - **Fold-back UI.** The contract already tells the agent how to propose a
   fold-back; a panel button ("fold these into my master") sending exactly
-  that request would make it one tap.
+  that request would make it one tap. (The MCP Master tab is the natural
+  home for it now — the sync-down button already lives there.)
+- **The DSH web preview** only has the outgoing "vs master" panel. The
+  Master tab / side-by-side / incoming delta are MCP-only for now; porting
+  `031-cv-master.js` is the follow-up.
 - **Base shortlisting.** With many applications, the host could rank which
   past variant is closest to a new post (stored posts ↔ fit scores ↔ titles)
   and hand the agent ONE reference delta with the master, instead of letting

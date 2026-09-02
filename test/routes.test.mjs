@@ -965,6 +965,21 @@ import { createDocStore } from '../lib/store/doc-store.js'
   // the session's own tailored CV (saved above through /jobcv/cvs setup) is
   // what the delta compares against
   assert.equal(deltaCall.body.kind, 'cv')
+  assert.equal(deltaCall.body.direction, 'outgoing', 'the default delta is the fold-back view')
+
+  // ?dir=incoming flips it to "what the master gained since this CV"
+  const incomingCall = fakeRes()
+  await deltaEntry.handler(
+    { method: 'GET', url: '/jobcv/delta?session=fresh&dir=incoming' },
+    incomingCall,
+  )
+  assert.equal(incomingCall.code, 200)
+  assert.equal(incomingCall.body.direction, 'incoming')
+  assert.equal(incomingCall.body.masterVersion, 2)
+  assert.ok(
+    'baseMasterVersion' in incomingCall.body,
+    'the incoming delta names the version it diffed from',
+  )
 
   // restoring an earlier master rides the restore route's kind dispatch
   const restoreEntry = entryFor(groups, '/jobcv/restore')
